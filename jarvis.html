@@ -1,0 +1,3458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS</title>
+<style>
+  :root{
+    --theme: #22c3ff;
+    --theme-dim: #0a4a66;
+    --violet: #8b5cf6;
+    --bg: #05070c;
+    --bg2: #0a0f1a;
+    --panel: #0d1420;
+    --text: #dfe8f5;
+    --muted: #7c8aa0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    width:100%; height:100%; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x:hidden;
+  }
+  body{ min-height:100vh; }
+  .hidden{ display:none !important; }
+  ::selection{ background:var(--theme); color:#000; }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #bootScreen{
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at center, #0a1420 0%, #05070c 70%);
+    transition: opacity 0.8s ease;
+  }
+  #bootScreen.fade-out{ opacity:0; pointer-events:none; }
+  .boot-title{
+    font-family: "Courier New", monospace;
+    font-size: clamp(2.2rem, 8vw, 5rem);
+    font-weight:700;
+    letter-spacing: 0.15em;
+    background: linear-gradient(90deg, var(--theme), var(--violet));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-align:center;
+  }
+  .boot-line{
+    width:min(70%,420px); height:2px; margin:22px 0;
+    background: linear-gradient(90deg, transparent, var(--theme), var(--violet), transparent);
+    animation: bootPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes bootPulse{ 0%,100%{opacity:.35;} 50%{opacity:1;} }
+  .boot-sync{
+    font-family:"Courier New", monospace; letter-spacing:0.25em; font-size:0.85rem;
+    color: var(--theme); animation: blink 1s steps(2,start) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0.15; } }
+  .boot-ver{
+    position:absolute; bottom:28px; font-family:"Courier New", monospace;
+    font-size:0.7rem; letter-spacing:0.2em; color:var(--muted);
+  }
+
+  /* ---------- ACTIVATION SCREEN ---------- */
+  #activationScreen{
+    position:fixed; inset:0; z-index:90;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+    background: radial-gradient(ellipse at center, #0a1420 0%, #05070c 70%);
+  }
+  .act-title{
+    font-family:"Courier New", monospace; font-weight:700; letter-spacing:0.15em;
+    font-size: clamp(2rem, 7vw, 4.2rem);
+    background: linear-gradient(90deg, var(--theme), var(--violet));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  #activateBtn{
+    font-family:"Courier New", monospace; letter-spacing:0.12em; font-size:1rem;
+    padding:16px 38px; border-radius: 999px; cursor:pointer;
+    background: transparent; color:var(--theme); border:1px solid var(--theme);
+    box-shadow: 0 0 24px -4px var(--theme);
+    transition: all .25s ease;
+  }
+  #activateBtn:hover{ background:var(--theme); color:#001018; box-shadow:0 0 40px -2px var(--theme); }
+  .act-hint{ color:var(--muted); font-size:0.78rem; letter-spacing:0.2em; }
+
+  /* ---------- APP SHELL ---------- */
+  #app{ display:flex; flex-direction:column; min-height:100vh; }
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:10px 18px; border-bottom:1px solid #131c2b; background:var(--bg2);
+    flex-wrap:wrap;
+  }
+  header.topbar .brand{ font-family:"Courier New",monospace; letter-spacing:0.15em; color:var(--theme); font-weight:700; }
+  #apiKeyInput{
+    background:var(--panel); border:1px solid #1c2740; color:var(--text);
+    padding:7px 10px; border-radius:8px; font-size:0.78rem; width:min(260px,42vw);
+  }
+  #apiKeyStatus{ font-size:0.7rem; color:var(--muted); }
+
+  main.orb-area{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 16px; gap:18px; text-align:center;
+  }
+  #orbWrap{ position:relative; width:220px; height:220px; cursor:pointer; }
+  #orbCanvasSvg{ width:100%; height:100%; }
+  .orb-status{ font-size:0.78rem; letter-spacing:0.2em; color:var(--theme); text-transform:uppercase; }
+  .transcript{ max-width:640px; width:100%; min-height:56px; }
+  .transcript .you{ color:var(--muted); font-size:0.92rem; margin-bottom:6px; }
+  .transcript .jarvis{ color:var(--text); font-size:1.05rem; font-weight:500; }
+
+  .controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+  #textInput{
+    background:var(--panel); border:1px solid #1c2740; color:var(--text);
+    padding:11px 14px; border-radius:10px; width:min(420px,72vw); font-size:0.92rem;
+  }
+  .iconBtn{
+    background:var(--panel); border:1px solid #1c2740; color:var(--theme);
+    width:42px; height:42px; border-radius:50%; cursor:pointer; font-size:1.1rem;
+    display:flex; align-items:center; justify-content:center; transition:.2s;
+  }
+  .iconBtn:hover{ background:var(--theme); color:#001018; }
+  .iconBtn.mic-active{ background:var(--theme); color:#001018; box-shadow:0 0 18px var(--theme); }
+
+  /* ---------- SECOND BRAIN ---------- */
+  section.brain{ padding:16px 18px 40px; border-top:1px solid #131c2b; background:var(--bg2); }
+  .brain-bar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+  .brain-bar .lbl{ font-weight:700; letter-spacing:0.08em; }
+  .brain-bar .sub{ color:var(--muted); font-size:0.78rem; margin-left:8px; }
+  .brain-bar .right{ display:flex; align-items:center; gap:10px; font-size:0.78rem; color:var(--muted); }
+  .brain-bar button{
+    background:var(--panel); border:1px solid #1c2740; color:var(--theme); cursor:pointer;
+    width:30px; height:30px; border-radius:8px; font-size:0.95rem;
+  }
+  #graphContainer{ width:100%; max-width:1000px; margin:0 auto; }
+  #graphContainer svg{ width:100%; height:auto; display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:center; margin-top:8px; font-size:0.75rem; color:var(--muted); }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  .legend .injected{ color:#22c55e; margin-left:auto; }
+
+  /* ---------- NOTE EDITOR ---------- */
+  #editorOverlay{
+    position:fixed; inset:0; background:rgba(2,5,10,0.75); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  #editorBox{
+    background:var(--panel); border:1px solid #1c2740; border-radius:14px;
+    width:min(420px,94vw); padding:20px; display:flex; flex-direction:column; gap:12px;
+  }
+  #editorBox h3{ font-size:1rem; letter-spacing:0.05em; }
+  #editorBox label{ font-size:0.72rem; color:var(--muted); letter-spacing:0.08em; }
+  #editorBox input, #editorBox select, #editorBox textarea{
+    background:#0a1220; border:1px solid #1c2740; color:var(--text);
+    padding:9px 10px; border-radius:8px; font-size:0.88rem; width:100%; font-family:inherit;
+  }
+  #editorBox textarea{ min-height:90px; resize:vertical; }
+  .editor-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
+  .btn{ padding:9px 16px; border-radius:8px; cursor:pointer; font-size:0.85rem; border:1px solid #1c2740; background:#0a1220; color:var(--text); }
+  .btn.primary{ background:var(--theme); border-color:var(--theme); color:#001018; font-weight:700; }
+  .btn.danger{ background:transparent; border-color:#7a2030; color:#ff6b6b; }
+
+  #errorBanner{
+    position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:300;
+    background:#3a0f14; border:1px solid #7a2030; color:#ffb4b4;
+    padding:10px 18px; border-radius:10px; font-size:0.85rem; max-width:90vw; text-align:center;
+  }
+
+  @media (max-width:520px){
+    #orbWrap{ width:170px; height:170px; }
+    header.topbar{ flex-direction:column; align-items:flex-start; }
+  }
+
+  /* ---------- HUD BADGES ---------- */
+  .actionBadge{
+    background:#ff5547; color:#fff; border-radius:999px; padding:2px 9px;
+    font-size:0.72rem; font-weight:700; letter-spacing:0.02em;
+  }
+  #gearBtn{ font-size:1rem; }
+
+  /* ---------- TAB BAR ---------- */
+  nav.tabbar{
+    display:flex; gap:8px; padding:12px 18px; border-top:1px solid #131c2b;
+    background:var(--bg2); flex-wrap:wrap; align-items:center;
+  }
+  .tabbtn{
+    background:var(--panel); border:1px solid #1c2740; color:var(--muted);
+    padding:8px 15px; border-radius:999px; cursor:pointer; font-size:0.78rem;
+    letter-spacing:0.05em; display:flex; align-items:center; gap:7px; transition:.2s;
+    font-family:inherit;
+  }
+  .tabbtn:hover{ color:var(--text); }
+  .tabbtn.active{ color:var(--theme); border-color:var(--theme); box-shadow:0 0 14px -5px var(--theme); }
+  .tabbtn .badge{
+    background:#ff5547; color:#fff; border-radius:999px; font-size:0.65rem;
+    padding:1px 6px; min-width:16px; text-align:center; line-height:1.4;
+  }
+
+  /* ---------- MODULE PANELS ---------- */
+  .panelWrap{
+    padding:18px; border-top:1px solid #131c2b; background:var(--bg2);
+    animation: panelIn .35s ease;
+  }
+  @keyframes panelIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .panelHead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .panelHead h2{ font-size:0.92rem; letter-spacing:0.09em; }
+  .panelHead .sub{ color:var(--muted); font-size:0.76rem; margin-left:8px; }
+  .panelHead .actions{ display:flex; gap:8px; align-items:center; }
+  .panelHead button{
+    background:var(--panel); border:1px solid #1c2740; color:var(--theme); cursor:pointer;
+    width:30px; height:30px; border-radius:8px; font-size:0.9rem;
+  }
+  .offlineNote{
+    background:#241a06; border:1px solid #6b4a10; color:#ffcf7a;
+    padding:12px 16px; border-radius:10px; font-size:0.82rem; line-height:1.5;
+  }
+  .offlineNote code{ background:#000; padding:1px 6px; border-radius:5px; }
+
+  /* agenda */
+  .agendaCountdown{ color:var(--theme); font-size:0.82rem; margin-bottom:10px; font-weight:600; }
+  .dayGroupLabel{ font-size:0.72rem; letter-spacing:0.12em; color:var(--muted); margin:16px 0 8px; text-transform:uppercase; }
+  .eventRow{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid #131c2b; }
+  .eventDot{ width:9px; height:9px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .eventTime{ font-size:0.76rem; color:var(--muted); min-width:78px; }
+  .eventBody{ flex:1; }
+  .eventTitle{ font-size:0.88rem; }
+  .eventLoc{ font-size:0.74rem; color:var(--muted); margin-top:2px; }
+
+  /* emails */
+  .emailBucket{ margin-bottom:16px; }
+  .emailBucket h3{ font-size:0.78rem; letter-spacing:0.09em; margin-bottom:8px; color:var(--muted); }
+  .emailBucket.action h3{ color:var(--theme); }
+  .emailRow{ display:flex; gap:10px; align-items:flex-start; padding:9px 10px; border-radius:8px; cursor:pointer; }
+  .emailRow:hover{ background:var(--panel); }
+  .emailDot{ width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .emailMain{ flex:1; min-width:0; }
+  .emailFrom{ font-size:0.84rem; font-weight:600; }
+  .emailSummary{ font-size:0.8rem; color:var(--text); }
+  .emailExcerpt{ font-size:0.76rem; color:var(--muted); margin-top:4px; display:none; }
+  .emailRow.open .emailExcerpt{ display:block; }
+  .emailTime{ font-size:0.72rem; color:var(--muted); white-space:nowrap; }
+  details.ruidoBox summary{ cursor:pointer; font-size:0.78rem; color:var(--muted); letter-spacing:0.08em; }
+
+  /* news */
+  .newsTopic{ margin-bottom:18px; }
+  .newsTopic h3{ font-size:0.84rem; margin-bottom:8px; color:var(--theme); letter-spacing:0.04em; }
+  .newsItem{ display:block; padding:7px 0; border-bottom:1px solid #131c2b; color:var(--text); text-decoration:none; font-size:0.85rem; }
+  .newsItem:hover{ color:var(--theme); }
+  .newsSource{ font-size:0.72rem; color:var(--muted); margin-top:2px; }
+
+  /* digest */
+  .digestCard{
+    background:var(--panel); border:1px solid #1c2740; border-radius:14px;
+    padding:20px; font-size:0.96rem; line-height:1.6; white-space:pre-line;
+  }
+  .digestActions{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+
+  /* settings modal */
+  #settingsOverlay{
+    position:fixed; inset:0; background:rgba(2,5,10,0.75); z-index:250;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  #settingsBox{
+    background:var(--panel); border:1px solid #1c2740; border-radius:14px;
+    width:min(640px,96vw); max-height:88vh; overflow-y:auto;
+    padding:22px; display:flex; flex-direction:column; gap:16px;
+  }
+  #settingsBox h3{ font-size:1.05rem; letter-spacing:0.05em; }
+  .settingsSection{ border-top:1px solid #1c2740; padding-top:14px; }
+  .settingsSection h4{ font-size:0.82rem; color:var(--theme); letter-spacing:0.08em; margin-bottom:8px; }
+  .settingsHelp{ font-size:0.74rem; color:var(--muted); line-height:1.5; margin-bottom:10px; }
+  .settingsWarn{ font-size:0.74rem; color:#ffcf7a; line-height:1.5; margin-bottom:10px; }
+  .entryRow{
+    display:grid; grid-template-columns:1fr 1fr auto auto auto; gap:6px; margin-bottom:8px; align-items:center;
+  }
+  .entryRow input, .entryRow select{
+    background:#0a1220; border:1px solid #1c2740; color:var(--text);
+    padding:7px 8px; border-radius:7px; font-size:0.78rem; width:100%; font-family:inherit;
+  }
+  .entryRow input[type=color]{ padding:2px; height:32px; }
+  .entryRow .rmBtn{
+    background:transparent; border:1px solid #7a2030; color:#ff6b6b; border-radius:7px;
+    cursor:pointer; width:30px; height:30px;
+  }
+  .addRowBtn{
+    background:transparent; border:1px dashed #1c2740; color:var(--theme); cursor:pointer;
+    padding:8px 14px; border-radius:8px; font-size:0.78rem; width:100%;
+  }
+  .modelChoices{ display:flex; gap:8px; flex-wrap:wrap; }
+  .modelChoice{
+    flex:1; min-width:140px; background:#0a1220; border:1px solid #1c2740; border-radius:10px;
+    padding:10px; cursor:pointer; font-size:0.78rem;
+  }
+  .modelChoice.active{ border-color:var(--theme); box-shadow:0 0 10px -4px var(--theme); color:var(--theme); }
+  .toggleRow{ display:flex; align-items:center; justify-content:space-between; font-size:0.82rem; }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style id="design-layer">
+/* ══════════════════════════════════════════════════════════════
+   DESIGN LAYER — camada de estilo premium, adicionada por último.
+   Não altera HTML/JS/IDs/classes — só redefine tokens e aparência.
+   Pra trocar o tema inteiro: mexa só no bloco :root abaixo.
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  /* ---- tokens de cor (reaproveitam os nomes originais + novos) ---- */
+  --bg: #05060b;
+  --bg2: #0a0e1a;
+  --theme: #22c3ff;
+  --theme-dim: #0a4a66;
+  --violet: #8b5cf6;
+  --text: #eaf1fc;
+  --muted: #8792ab;
+
+  --primary: var(--theme);
+  --primary-dim: var(--theme-dim);
+  --accent: var(--violet);
+  --surface: var(--bg2);
+  --card: rgba(14, 20, 36, .58);
+  --card-strong: rgba(14, 20, 36, .82);
+  --border: rgba(148, 178, 220, .12);
+  --border-strong: rgba(34, 195, 255, .38);
+  --txt: var(--text);
+  --txt2: #aab6cc;
+  --txt3: #6b7690;
+  --green: #22c55e;
+  --red: #ff5547;
+  --yellow: #fbbf24;
+  --grad: linear-gradient(120deg, var(--primary), var(--accent));
+
+  --radius: 20px;
+  --radius-sm: 13px;
+  --radius-lg: 26px;
+  --ease: cubic-bezier(.22,1,.36,1);
+  --dur: .22s;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 52px;
+
+  --font: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+html, body{ font-family: var(--font) !important; }
+
+::selection{ background: var(--primary); color: #001018; }
+
+*{ scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar{ width: 9px; height: 9px; }
+*::-webkit-scrollbar-track{ background: transparent; }
+*::-webkit-scrollbar-thumb{ background: var(--border-strong); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover{ background: var(--primary); }
+
+:focus-visible{ outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+/* ---- ambiente / profundidade ---- */
+body{
+  background:
+    radial-gradient(ellipse 900px 600px at 12% -8%, rgba(34,195,255,.10), transparent 60%),
+    radial-gradient(ellipse 800px 700px at 100% 10%, rgba(139,92,246,.09), transparent 55%),
+    radial-gradient(ellipse 1000px 800px at 50% 120%, rgba(34,195,255,.06), transparent 60%),
+    var(--bg) !important;
+  background-attachment: fixed, fixed, fixed, fixed;
+  position: relative;
+}
+body::before{
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 30%, transparent 80%);
+}
+#bootScreen, #activationScreen, #app, #editorOverlay, #settingsOverlay{ position: relative; z-index: 1; }
+
+/* ---- boot screen ---- */
+#bootScreen{
+  background:
+    radial-gradient(ellipse 700px 500px at 50% 40%, rgba(34,195,255,.10), transparent 65%),
+    radial-gradient(ellipse at center, #0a1420 0%, #05070c 70%) !important;
+}
+#bootScreen::after{
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .15;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(255,255,255,.5) 3px, transparent 4px);
+  animation: scanroll 6s linear infinite;
+}
+@keyframes scanroll{ 0%{ background-position-y: 0; } 100%{ background-position-y: 60px; } }
+.boot-title{ letter-spacing: .18em !important; font-family: var(--font) !important; font-weight: 700 !important; }
+.boot-sync{ font-family: var(--font) !important; }
+.boot-ver{ font-family: var(--font) !important; }
+
+/* ---- activation screen ---- */
+#activationScreen{
+  background:
+    radial-gradient(ellipse 700px 500px at 50% 40%, rgba(139,92,246,.10), transparent 65%),
+    radial-gradient(ellipse at center, #0a1420 0%, #05070c 70%) !important;
+}
+.act-title{ letter-spacing: .18em !important; font-family: var(--font) !important; }
+#activateBtn{
+  font-family: var(--font) !important; letter-spacing: .14em !important;
+  border-radius: 999px !important;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease) !important;
+}
+#activateBtn:hover{ transform: translateY(-2px) scale(1.02); }
+#activateBtn:active{ transform: translateY(0) scale(.98); }
+.act-hint{ font-family: var(--font) !important; }
+
+/* ---- topbar ---- */
+header.topbar{
+  background: var(--card-strong) !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--border) !important;
+  padding: var(--sp-3) var(--sp-5) !important;
+}
+header.topbar .brand{
+  background: var(--grad);
+  -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  letter-spacing: .2em !important; font-weight: 700 !important;
+}
+#apiKeyInput{
+  background: rgba(10,16,28,.7) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important; font-family: var(--font) !important;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+#apiKeyInput:focus{ border-color: var(--border-strong) !important; box-shadow: 0 0 0 3px rgba(34,195,255,.12); }
+#apiKeyStatus{ font-family: var(--font) !important; }
+#gearBtn{ transition: transform var(--dur) var(--ease); }
+#gearBtn:hover{ transform: rotate(35deg); }
+
+/* ---- orb area ---- */
+#orbWrap{ filter: drop-shadow(0 0 34px rgba(34,195,255,.28)); transition: filter var(--dur) var(--ease); }
+#orbWrap:hover{ filter: drop-shadow(0 0 46px rgba(34,195,255,.4)); }
+.orb-status{ font-family: var(--font) !important; letter-spacing: .28em !important; font-weight: 600; }
+.transcript .jarvis{ font-family: var(--font) !important; }
+.transcript .you{ font-family: var(--font) !important; }
+.jarvis-provider-tag{
+  font-family: var(--font); font-size: .68rem; letter-spacing:.08em; text-transform:uppercase;
+  color: var(--txt3); margin-top: 8px; opacity:0; transition: opacity var(--dur) var(--ease);
+}
+.jarvis-provider-tag.show{ opacity: 1; }
+
+#textInput{
+  background: rgba(10,16,28,.6) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important; font-family: var(--font) !important;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+#textInput:focus{ border-color: var(--border-strong) !important; box-shadow: 0 0 0 3px rgba(34,195,255,.12); }
+.iconBtn{
+  background: rgba(10,16,28,.6) !important; border: 1px solid var(--border) !important;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.iconBtn:hover{ transform: translateY(-2px); border-color: var(--border-strong) !important; }
+.iconBtn:active{ transform: translateY(0) scale(.94); }
+.iconBtn.mic-active{ box-shadow: 0 0 0 4px rgba(34,195,255,.16), 0 0 22px rgba(34,195,255,.5) !important; }
+
+/* ---- second brain section ---- */
+section.brain{
+  background: var(--card) !important; backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border) !important; padding: var(--sp-5) var(--sp-5) var(--sp-7) !important;
+}
+.brain-bar .lbl{ font-family: var(--font) !important; letter-spacing: .06em; }
+.brain-bar .sub, #brainCount{ font-family: var(--font) !important; }
+.brain-bar button, .panelHead button{
+  border-radius: var(--radius-sm) !important; transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  background: rgba(10,16,28,.6) !important; border: 1px solid var(--border) !important;
+}
+.brain-bar button:hover, .panelHead button:hover{ transform: translateY(-1px); border-color: var(--border-strong) !important; color: var(--primary) !important; }
+#graphContainer{ animation: fadeUp .5s var(--ease); }
+.legend{ font-family: var(--font) !important; }
+.legend .injected{ font-weight: 600; }
+
+/* ---- note editor / settings modals (glass) ---- */
+#editorOverlay, #settingsOverlay{ backdrop-filter: blur(6px); animation: fadeIn .2s var(--ease); }
+#editorBox, #settingsBox{
+  background: var(--card-strong) !important; backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
+  box-shadow: 0 26px 60px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  animation: fadeUp .28s var(--ease);
+  font-family: var(--font) !important;
+}
+#editorBox input, #editorBox select, #editorBox textarea,
+.entryRow input, .entryRow select{
+  background: rgba(10,16,28,.7) !important; border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important; font-family: var(--font) !important;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+#editorBox input:focus, #editorBox select:focus, #editorBox textarea:focus,
+.entryRow input:focus, .entryRow select:focus{
+  border-color: var(--border-strong) !important; box-shadow: 0 0 0 3px rgba(34,195,255,.12); outline: none;
+}
+.btn{
+  border-radius: var(--radius-sm) !important; font-family: var(--font) !important;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease);
+}
+.btn:hover{ transform: translateY(-1px); }
+.btn.primary{ background: var(--grad) !important; border: none !important; box-shadow: 0 6px 20px -4px rgba(34,195,255,.45); }
+.btn.primary:hover{ filter: brightness(1.08); }
+.btn.danger:hover{ background: rgba(255,85,71,.1) !important; }
+.rmBtn, .addRowBtn{ border-radius: var(--radius-sm) !important; transition: transform var(--dur) var(--ease), background var(--dur) var(--ease); }
+.rmBtn:hover{ transform: scale(1.08); background: rgba(255,85,71,.12) !important; }
+.addRowBtn:hover{ background: rgba(34,195,255,.06) !important; border-color: var(--border-strong) !important; }
+.modelChoice{ border-radius: var(--radius-sm) !important; transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+.modelChoice:hover{ transform: translateY(-2px); }
+.modelChoice.active{ box-shadow: 0 0 0 1px var(--primary), 0 8px 22px -6px rgba(34,195,255,.35) !important; }
+#errorBanner{
+  background: rgba(58,15,20,.85) !important; backdrop-filter: blur(14px);
+  border-radius: var(--radius-sm) !important; animation: dropIn .3s var(--ease);
+}
+
+/* ---- tab bar / module panels ---- */
+nav.tabbar{
+  background: var(--card) !important; backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border) !important;
+}
+.tabbtn{
+  border-radius: 999px !important; font-family: var(--font) !important;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  background: rgba(10,16,28,.6) !important; border: 1px solid var(--border) !important;
+}
+.tabbtn:hover{ transform: translateY(-1px); }
+.tabbtn.active{ box-shadow: 0 0 18px -4px rgba(34,195,255,.5) !important; }
+.tabbtn .badge{ background: var(--red) !important; }
+
+.panelWrap{
+  background: var(--card) !important; backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border) !important;
+  animation: fadeUp .32s var(--ease);
+}
+.panelHead h2{ font-family: var(--font) !important; letter-spacing: .07em; }
+.panelHead .sub{ font-family: var(--font) !important; }
+.offlineNote{
+  background: rgba(36,26,6,.55) !important; backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm) !important; border: 1px solid rgba(107,74,16,.5) !important;
+}
+
+/* agenda */
+.agendaCountdown{ font-family: var(--font) !important; }
+.dayGroupLabel{ font-family: var(--font) !important; }
+.eventRow{
+  background: rgba(255,255,255,.015); border-radius: var(--radius-sm); border-bottom: none !important;
+  margin-bottom: var(--sp-2); padding: var(--sp-3) var(--sp-4) !important;
+  border: 1px solid var(--border); transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.eventRow:hover{ border-color: var(--border-strong); transform: translateX(2px); }
+
+/* emails */
+.emailBucket h3{ font-family: var(--font) !important; letter-spacing: .07em; }
+.emailRow{
+  border-radius: var(--radius-sm) !important; border: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.emailRow:hover{ background: rgba(255,255,255,.03) !important; border-color: var(--border); transform: translateX(2px); }
+.emailFrom, .emailSummary, .emailTime{ font-family: var(--font) !important; }
+details.ruidoBox{ border-radius: var(--radius-sm); }
+details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; }
+
+/* news */
+.newsTopic h3{ font-family: var(--font) !important; }
+.newsItem{
+  border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3) !important; border-bottom: none !important;
+  margin-bottom: 2px; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.newsItem:hover{ background: rgba(34,195,255,.06); transform: translateX(2px); }
+.newsSource{ font-family: var(--font) !important; }
+
+/* digest */
+.digestCard{
+  background: var(--card-strong) !important; backdrop-filter: blur(18px);
+  border-radius: var(--radius-lg) !important; border: 1px solid var(--border) !important;
+  box-shadow: 0 20px 50px -16px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  font-family: var(--font) !important;
+}
+.digestActions .btn{ background: rgba(10,16,28,.6); border: 1px solid var(--border); color: var(--txt); }
+
+/* settings sections */
+.settingsSection{ border-top: 1px solid var(--border) !important; }
+.settingsSection h4{ font-family: var(--font) !important; letter-spacing: .08em; }
+.settingsHelp, .settingsWarn{ font-family: var(--font) !important; }
+#settingsBox h3{ font-family: var(--font) !important; letter-spacing: .06em; }
+
+/* graph node labels */
+#graphContainer text{ font-family: var(--font) !important; }
+
+@keyframes fadeUp{ from{ opacity: 0; transform: translateY(10px); } to{ opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
+@keyframes dropIn{ from{ opacity: 0; transform: translate(-50%, -10px); } to{ opacity: 1; transform: translate(-50%, 0); } }
+
+@media (max-width: 520px){
+  header.topbar{ padding: var(--sp-3) var(--sp-4) !important; }
+  .digestCard, #editorBox, #settingsBox{ border-radius: var(--radius) !important; }
+}
+
+/* ---- painel de agentes (constelação) ---- */
+.agents-layout{ display:flex; gap: var(--sp-5); flex-wrap:wrap; align-items:flex-start; }
+.agents-svg-wrap{ flex:1 1 480px; min-width:280px; }
+.agents-svg-wrap svg{ width:100%; height:auto; display:block; }
+.agents-side{ flex:0 0 300px; min-width:260px; display:flex; flex-direction:column; gap: var(--sp-4); }
+.agents-summary{ display:flex; gap:8px; flex-wrap:wrap; }
+.agents-summary .chip{ background:var(--card); border:1px solid var(--border); border-radius:999px; padding:6px 13px; font-size:.76rem; font-family: var(--font); }
+.agents-summary .chip b{ margin-right:5px; }
+.agents-detail{ background:var(--card); backdrop-filter:blur(14px); border:1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-4); font-size:.85rem; font-family: var(--font); }
+.agents-detail h3{ font-size:.95rem; margin-bottom:8px; letter-spacing:.02em; }
+.agents-detail .row{ display:flex; justify-content:space-between; gap:10px; padding:5px 0; border-bottom:1px solid var(--border); font-size:.78rem; }
+.agents-detail .row:last-of-type{ border-bottom:none; }
+.agents-detail .row span:first-child{ color:var(--txt3); flex-shrink:0; }
+.agents-detail .row span:last-child{ text-align:right; color:var(--txt2); }
+.agents-detail .runBtn{ margin-top:12px; width:100%; }
+.agents-detail .empty{ color:var(--txt3); font-size:.82rem; text-align:center; padding: var(--sp-3) 0; }
+.agents-list{ background:var(--card); backdrop-filter:blur(14px); border:1px solid var(--border); border-radius: var(--radius-sm); overflow:hidden; }
+.agents-list .item{ display:flex; align-items:center; gap:9px; padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border); font-size:.8rem; font-family: var(--font); transition: background var(--dur) var(--ease); }
+.agents-list .item:last-child{ border-bottom:none; }
+.agents-list .item:hover{ background: rgba(255,255,255,.03); }
+.agents-list .item.selected{ background: rgba(34,195,255,.1); }
+.agents-list .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.agents-list .state-label{ margin-left:auto; color:var(--txt3); font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; }
+.agent-hex{ cursor:pointer; }
+.agent-hex text{ font-family: var(--font); }
+@media (max-width:780px){
+  .agents-layout{ flex-direction:column; }
+  .agents-svg-wrap{ flex:none; width:100%; }
+  .agents-side{ flex:none; width:100%; }
+}
+</style>
+</head>
+<body>
+
+<div id="bootScreen">
+  <div class="boot-title">JARVIS</div>
+  <div class="boot-line"></div>
+  <div class="boot-sync">SINCRONIZANDO DADOS...</div>
+  <div class="boot-ver">v5.0 · REBUILD</div>
+</div>
+
+<div id="activationScreen" class="hidden">
+  <div class="act-title">JARVIS</div>
+  <button id="activateBtn">► ATIVAR SISTEMA</button>
+  <div class="act-hint">CLIQUE PARA INICIAR</div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">◉ JARVIS</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="actionEmailBadge" class="actionBadge hidden">0</span>
+      <input id="apiKeyInput" type="password" placeholder="Cole sua API key da Anthropic aqui">
+      <span id="apiKeyStatus"></span>
+      <button class="iconBtn" id="gearBtn" title="Configurações">⚙</button>
+    </div>
+  </header>
+
+  <main class="orb-area">
+    <div id="orbWrap">
+      <svg id="orbCanvasSvg" viewBox="0 0 220 220"></svg>
+    </div>
+    <div class="orb-status" id="orbStatus">OCIOSO</div>
+    <div class="transcript">
+      <div class="you" id="youLine"></div>
+      <div class="jarvis" id="jarvisLine">Sistemas prontos.</div>
+      <div class="jarvis-provider-tag" id="jarvisProviderTag"></div>
+    </div>
+    <div class="controls">
+      <button class="iconBtn" id="micBtn" title="Microfone">🎙</button>
+      <input id="textInput" type="text" placeholder="ou digite e tecle Enter">
+      <button class="iconBtn" id="stopBtn" title="Interromper fala">⏹</button>
+    </div>
+  </main>
+
+  <section class="brain">
+    <div class="brain-bar">
+      <div><span class="lbl">🧠 SECOND BRAIN</span><span class="sub">memória viva do Kazu</span></div>
+      <div class="right">
+        <span id="brainCount">0 notas · 0 áreas</span>
+        <button id="addNoteBtn" title="Nova nota">+</button>
+        <button id="reloadBtn" title="Recarregar">⟳</button>
+      </div>
+    </div>
+    <div id="graphContainer"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <nav class="tabbar">
+    <button class="tabbtn active" data-tab="agenda">📅 AGENDA</button>
+    <button class="tabbtn" data-tab="emails">✉ E-MAILS <span id="emailTabBadge" class="badge hidden">0</span></button>
+    <button class="tabbtn" data-tab="news">📰 NOTÍCIAS</button>
+    <button class="tabbtn" data-tab="digest">☀ DIGEST</button>
+    <button class="tabbtn" data-tab="agents">🛰 AGENTES</button>
+    <button class="tabbtn" data-tab="tokens" data-external="ai-token-control.html" title="Abre o painel AI Token Control em outra aba">🪙 TOKENS</button>
+  </nav>
+
+  <section class="panelWrap" id="panel-agenda">
+    <div class="panelHead">
+      <div><h2>📅 CENTRAL DE AGENDA</h2><span class="sub">hoje + próximos 7 dias</span></div>
+      <div class="actions"><button id="agendaRefreshBtn" title="Atualizar">⟳</button></div>
+    </div>
+    <div id="agendaContent"></div>
+  </section>
+
+  <section class="panelWrap hidden" id="panel-emails">
+    <div class="panelHead">
+      <div><h2>✉ CENTRAL DE E-MAILS</h2><span class="sub">triagem AÇÃO · INFO · RUÍDO</span></div>
+      <div class="actions"><button id="emailsRefreshBtn" title="Atualizar">⟳</button></div>
+    </div>
+    <div class="tabbar" id="emailsAccountTabs" style="padding:0 0 12px; border-top:none;"></div>
+    <div id="emailsContent"></div>
+  </section>
+
+  <section class="panelWrap hidden" id="panel-news">
+    <div class="panelHead">
+      <div><h2>📰 RADAR DE NOTÍCIAS</h2><span class="sub" id="newsSub"></span></div>
+      <div class="actions"><button id="newsRefreshBtn" title="Atualizar">⟳</button></div>
+    </div>
+    <div id="newsContent"></div>
+  </section>
+
+  <section class="panelWrap hidden" id="panel-digest">
+    <div class="panelHead">
+      <div><h2>☀ MORNING DIGEST</h2><span class="sub">bom dia, Kazu</span></div>
+      <div class="actions"><button id="digestRunBtn" title="Gerar agora">▶</button></div>
+    </div>
+    <div id="digestContent"><div class="digestCard" id="digestCard">Diga "bom dia" ou clique em ▶ para gerar o briefing de hoje.</div></div>
+    <div class="digestActions">
+      <button class="btn" id="digestSpeakBtn">🔊 Ouvir de novo</button>
+    </div>
+  </section>
+
+  <section class="panelWrap hidden" id="panel-agents">
+    <div class="panelHead">
+      <div><h2>🛰 PAINEL DE AGENTES</h2><span class="sub">processos autônomos — a antena rodando sozinha</span></div>
+      <div class="actions"><button id="agentsRefreshBtn" title="Atualizar">⟳</button></div>
+    </div>
+    <div id="agentsConstellationWrap">
+      <div id="agentsContent"></div>
+    </div>
+  </section>
+</div>
+
+<div id="editorOverlay" class="hidden">
+  <div id="editorBox">
+    <h3 id="editorTitle">Nota</h3>
+    <div>
+      <label>TÍTULO</label>
+      <input id="editTitle" type="text">
+    </div>
+    <div>
+      <label>ÁREA</label>
+      <select id="editArea"></select>
+    </div>
+    <div>
+      <label>CONTEÚDO</label>
+      <textarea id="editBody"></textarea>
+    </div>
+    <div class="editor-actions">
+      <button class="btn danger" id="deleteNoteBtn">Excluir</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="cancelEditBtn">Cancelar</button>
+        <button class="btn primary" id="saveNoteBtn">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="settingsOverlay" class="hidden">
+  <div id="settingsBox">
+    <h3>⚙ CONFIGURAÇÕES</h3>
+    <div id="antennaStatus" class="offlineNote">verificando a antena…</div>
+
+    <div class="settingsSection">
+      <h4>📅 AGENDA</h4>
+      <div class="settingsHelp">
+        Cole o endereço secreto/ICS de cada agenda. Google: Google Agenda no computador → ⚙ Configurações → clique na agenda à esquerda → "Integrar agenda" → copie o "Endereço secreto em formato iCal".
+        Outlook/365: Configurações → Calendário → Calendários compartilhados → "Publicar um calendário" → copie o link ICS.
+        Titan/HostGator: no painel de e-mail, procure "Calendário" → "Publicar/Compartilhar" → copie o link ICS (se o plano oferecer).
+        <br>Esse link dá acesso de leitura à sua agenda. Fica salvo só no seu navegador e nunca é enviado para a IA.
+      </div>
+      <div id="calRows"></div>
+      <button class="addRowBtn" id="addCalBtn">+ adicionar agenda</button>
+    </div>
+
+    <div class="settingsSection">
+      <h4>✉ E-MAILS</h4>
+      <div class="settingsHelp">
+        Passo a passo: (1) ative a verificação em 2 etapas em myaccount.google.com/security (ou equivalente do seu provedor) — sem isso a senha de app não aparece. (2) Depois vá em myaccount.google.com/apppasswords, crie um app "Jarvis" e copie a senha de 16 letras. (3) Cole essa senha aqui embaixo.
+      </div>
+      <div class="settingsWarn">Sua senha de app fica só no seu navegador e viaja apenas até a antena local e o seu provedor. Pra triagem, remetente/assunto/trecho vão pra API da Anthropic. O Jarvis só LÊ: nunca envia, responde, apaga ou marca nada.</div>
+      <div id="emailRows"></div>
+      <button class="addRowBtn" id="addEmailBtn">+ adicionar conta</button>
+    </div>
+
+    <div class="settingsSection">
+      <h4>📰 NOTÍCIAS</h4>
+      <div class="settingsHelp">Assuntos do seu radar (Brasil · português):</div>
+      <div id="newsRows"></div>
+      <div style="display:flex; gap:8px;">
+        <input id="newTopicInput" type="text" placeholder="novo assunto (ex: futebol)" style="flex:1;">
+        <button class="addRowBtn" id="addTopicBtn" style="width:auto;">+ adicionar</button>
+      </div>
+    </div>
+
+    <div class="settingsSection">
+      <h4>☀ MORNING DIGEST</h4>
+      <div class="toggleRow"><span>Incluir previsão do tempo</span><input type="checkbox" id="digestWeatherToggle"></div>
+      <div class="toggleRow"><span>Ler em voz alta</span><input type="checkbox" id="digestSpeakToggle"></div>
+      <div class="toggleRow"><span>Disparo automático (1x/dia ao ativar)</span><input type="checkbox" id="digestAutoToggle"></div>
+    </div>
+
+    <div class="settingsSection">
+      <h4>⚙ MOTOR & ECONOMIA</h4>
+      <div class="settingsHelp">Escolha de qual provedor o Jarvis "pensa". Anthropic, Perplexity e OpenAI (ChatGPT) são pagas por uso; Gemini, Groq, Mistral, Cerebras e OpenRouter (modelos :free) têm camada gratuita sem cartão — bom pra quem não quer colocar crédito na API.</div>
+      <label style="margin-bottom:6px;">PROVEDOR</label>
+      <div class="modelChoices" id="providerChoices"></div>
+      <div class="field" id="providerKeyField" style="margin-top:10px;">
+        <label id="providerKeyLabel">Chave de API</label>
+        <input type="password" id="providerKeyInput" placeholder="cole a chave aqui">
+        <div class="hint" id="providerKeyHint"></div>
+      </div>
+
+      <details class="ruidoBox" style="margin-top:12px;">
+        <summary>📖 Como pegar a chave de cada provedor</summary>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Anthropic (Claude) — pago por uso</b><br>
+          1. Crie conta em <b>console.anthropic.com</b><br>
+          2. Menu → <b>API Keys</b> → "Create Key" → copie (começa com <code>sk-ant-...</code>)<br>
+          3. Vá em <b>Plans &amp; Billing</b> e adicione um cartão + créditos (uso pessoal leve costuma custar centavos por dia)<br>
+          4. Cole a chave aqui em cima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Google Gemini — grátis, sem cartão</b><br>
+          1. Vá em <b>aistudio.google.com</b> e entre com sua conta Google<br>
+          2. Clique em "Get API key" → "Create API key"<br>
+          3. Copie e cole aqui em cima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Groq — grátis, sem cartão</b><br>
+          1. Vá em <b>console.groq.com</b> e crie conta (dá pra usar login do Google)<br>
+          2. Menu → <b>API Keys</b> → "Create API Key"<br>
+          3. Copie e cole aqui em cima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">OpenRouter — grátis nos modelos marcados :free</b><br>
+          1. Vá em <b>openrouter.ai</b> e crie conta<br>
+          2. Menu → <b>Keys</b> → "Create Key"<br>
+          3. Copie e cole aqui em cima. Ao trocar de nível, prefira modelos com <code>:free</code> no nome pra não gastar nada
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Mistral — grátis, sem cartão (~1 bilhão de tokens/mês)</b><br>
+          1. Vá em <b>console.mistral.ai</b> e crie conta<br>
+          2. Menu → <b>API Keys</b> → "Create new key"<br>
+          3. Copie e cole aqui em cima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Cerebras — grátis, sem cartão (1M tokens/dia, super rápido)</b><br>
+          1. Vá em <b>cloud.cerebras.ai</b> e crie conta<br>
+          2. Menu → <b>API Keys</b> → "Create API Key"<br>
+          3. Copie e cole aqui em cima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Perplexity — PAGO desde o primeiro request (sem camada gratuita)</b><br>
+          1. Vá em <b>perplexity.ai/settings/api</b><br>
+          2. Adicione um cartão e créditos (cobra por uso, sem teste grátis)<br>
+          3. Gere a chave e cole aqui em cima. Só vale a pena se quiser respostas com busca na web em tempo real — pros demais casos prefira os provedores grátis acima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">OpenAI (ChatGPT) — PAGO por uso (sem camada gratuita geral)</b><br>
+          1. Vá em <b>platform.openai.com</b> e crie conta<br>
+          2. Menu → <b>API keys</b> → "Create new secret key"<br>
+          3. Adicione um cartão em <b>Billing</b> (contas novas ganham só um crédito único de ~$5, depois é 100% pago)<br>
+          4. Copie e cole aqui em cima. <b>Importante:</b> sua assinatura Claude Pro/ChatGPT Plus (o app/site) NÃO dá acesso à API — são cobranças separadas
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">Provedor personalizado (Together, Fireworks, Ollama local...)</b><br>
+          Preencha nome, a URL do endpoint (termina em <code>/chat/completions</code>) e o id do modelo na seção "Provedores personalizados" mais abaixo — a chave (se precisar) aparece aqui em cima assim que você selecionar esse provedor na lista.
+        </div>
+      </details>
+
+      <label style="margin:14px 0 6px;">NÍVEL</label>
+      <div class="modelChoices" id="modelTierChoices"></div>
+      <div class="toggleRow" style="margin-top:12px;"><span>Modo economia</span><input type="checkbox" id="economyToggle"></div>
+      <div class="toggleRow" style="margin-top:8px;"><span>Modo automático (escolhe o provedor por atividade/complexidade)</span><input type="checkbox" id="autoModeToggle"></div>
+      <div class="hint">Bolinha verde 🟢 na lista de provedor = tem chave configurada. No modo automático, cada pergunta/tarefa usa o melhor provedor disponível pra aquele tipo de trabalho — a escolha aparece no console (F12) se quiser conferir.</div>
+
+      <label style="margin:14px 0 6px;">PROVEDORES PERSONALIZADOS</label>
+      <div class="settingsHelp">Qualquer serviço compatível com o formato de chat da OpenAI (Together.ai, Fireworks, Ollama local, etc.)</div>
+      <div id="customProviderRows"></div>
+      <div class="entryRow" style="grid-template-columns:1fr 1.4fr 1fr auto;">
+        <input type="text" id="cp-label" placeholder="nome (ex: Together)">
+        <input type="text" id="cp-url" placeholder="URL do endpoint (.../chat/completions)">
+        <input type="text" id="cp-model" placeholder="id do modelo">
+        <button class="addRowBtn" id="addCustomProviderBtn" style="width:auto;">+</button>
+      </div>
+    </div>
+
+    <div class="editor-actions">
+      <span></span>
+      <button class="btn primary" id="closeSettingsBtn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ CONFIG ============ */
+const CONFIG = {
+  name: "Jarvis",
+  address: "Kazu",
+  themeColor: "#22c3ff",
+  persona: "descontraído, fala como um amigo próximo e parceiro de confiança, direto, com leveza e bom humor, sem ser formal nem robótico",
+  wakeWord: "ei jarvis",
+  voiceGender: "masculina",
+  model: "claude-sonnet-5"
+};
+
+const AREA = {
+  metas:       { label:"Metas",       color:"#fbbf24" },
+  trabalho:    { label:"Carreira",    color:"#ff5547" },
+  projetos:    { label:"Projetos",    color:"#8b7cff" },
+  financas:    { label:"Finanças",    color:"#f7931a" },
+  aprendizado: { label:"Aprendizado", color:"#2dd4ff" },
+  saude:       { label:"Saúde",       color:"#10b981" },
+  relacoes:    { label:"Relações",    color:"#ec4899" },
+  meta:        { label:"Sobre Você",  color:"#8a90a6" }
+};
+
+const DEFAULT_NOTES = [
+  { id:"voce1",        area:"meta",        title:"Sobre Mim",         body:"Mateus, 29 anos, mora em Embu das Artes/SP. Analista de Eficiência Operacional, entende como empresas funcionam, otimiza processos e conecta pessoas, tecnologia e dados. Descontraído, gosta de leveza sem perder profissionalismo. Valoriza lealdade, honestidade e relações verdadeiras. Curioso, gosta de aprender e questionar. Tem espírito empreendedor — estuda negócios, investimentos, liderança e inteligência emocional." },
+  { id:"metas_curto",  area:"metas",       title:"Metas Curto Prazo", body:"Dar o próximo passo na carreira nos próximos 3 a 6 meses: promoção interna ou oportunidade externa para Analista Pleno, consolidando experiência em eficiência operacional, melhoria contínua e análise de dados. Também quer ampliar conhecimento técnico e participar de projetos estratégicos." },
+  { id:"metas_longo",  area:"metas",       title:"Metas Longo Prazo", body:"Em 1 a 3 anos, construir uma carreira sólida e estratégica em Eficiência Operacional, e estruturar a Murus Seguros com processos bem definidos e carteira de clientes crescente, criando um negócio sustentável que dê mais liberdade de escolha no futuro." },
+  { id:"atmo",         area:"trabalho",    title:"Atmo Energia",      body:"Analista de Eficiência Operacional Júnior na Atmo Energia. Identifica oportunidades de melhoria, otimiza processos e conecta áreas de negócio com tecnologia e dados. Foco atual em projetos estratégicos, entregando com visão de longo prazo para crescer profissionalmente." },
+  { id:"bi_comercial", area:"projetos",    title:"BI Comercial",      body:"Painel estratégico na Atmo para acompanhar indicadores comerciais, funil de vendas e performance, apoiando a tomada de decisão." },
+  { id:"bi_operacional",area:"projetos",   title:"BI Operacional",    body:"Dashboards na Atmo para monitorar indicadores operacionais, identificar gargalos e aumentar a eficiência dos processos." },
+  { id:"bi_gerencial", area:"projetos",    title:"BI Gerencial",      body:"Painel executivo na Atmo consolidando os principais KPIs da empresa para apoiar decisões estratégicas da liderança." },
+  { id:"bi_terral",    area:"projetos",    title:"BI Terral",         body:"Dashboard para a Terral, cliente da Atmo, reunindo dados operacionais, financeiros e de gestão da operação de geração de energia." },
+  { id:"murus",        area:"projetos",    title:"Murus Seguros",     body:"Corretora de seguros própria: planejamento do negócio, definição de processos, identidade de marca, captação de clientes e marketing, construindo uma empresa sólida e escalável." },
+  { id:"financas",     area:"financas",    title:"Diversificar Renda", body:"Quer aumentar a renda principal evoluindo na carreira CLT, e desenvolver fontes complementares — principalmente a Murus Seguros, além de possíveis rendas extras como monetização de redes sociais e outros produtos/serviços. Objetivo de longo prazo: reduzir dependência de um único salário." },
+  { id:"aprendizado",  area:"aprendizado", title:"Pós ou MBA",        body:"Em decisão entre uma pós/especialização em Mercado Livre de Energia (PUC ou Mackenzie) e um MBA em Inteligência Artificial aplicada a Negócios. Também gosta de ler/ouvir livros sobre negócios e mentalidade de crescimento: O Homem Mais Rico da Babilônia, Pai Rico Pai Pobre, Seja Foda!, Deixe de Ser Pobre e Do Mil ao Milhão." },
+  { id:"saude",        area:"saude",       title:"Retomar Hábitos",   body:"Precisa retomar o treino com regularidade após período de procrastinação. Alimentação equilibrada na semana com marmitas próprias, mais flexível no fim de semana. Sono sem grandes problemas. Quer voltar a fazer exames laboratoriais e check-ups de rotina." },
+  { id:"familia",      area:"relacoes",    title:"Mãe",               body:"Mora com a mãe. Boa convivência, mas relação reservada — ela conhece pouco dos planos e próximos passos dele." },
+  { id:"irma",         area:"relacoes",    title:"Irmã",              body:"Tem uma irmã, que é casada e tem uma filha — sobrinha do Mateus." },
+  { id:"gabriel",      area:"relacoes",    title:"Gabriel Morais",    body:"Parceiro de confiança principal. Conhece praticamente todos os planos, metas, objetivos e sonhos dele — é quem ele procura para opinião sincera e decisões importantes." },
+  { id:"amigos",       area:"relacoes",    title:"Amigos-Chave",      body:"Círculo de confiança: Nando Santana, Rada, Felipe Santos e José." }
+];
+
+const REL = [
+  ["voce1","metas_curto"], ["voce1","metas_longo"], ["voce1","atmo"], ["voce1","saude"],
+  ["voce1","gabriel"], ["voce1","familia"], ["voce1","aprendizado"],
+  ["metas_curto","atmo"], ["metas_curto","metas_longo"], ["metas_curto","financas"],
+  ["metas_longo","murus"], ["metas_longo","financas"], ["metas_longo","saude"],
+  ["atmo","bi_comercial"], ["atmo","bi_operacional"], ["atmo","bi_gerencial"], ["atmo","bi_terral"], ["atmo","aprendizado"],
+  ["bi_comercial","bi_operacional"], ["bi_operacional","bi_gerencial"], ["bi_gerencial","bi_terral"],
+  ["murus","financas"],
+  ["gabriel","amigos"], ["gabriel","familia"], ["familia","irma"], ["irma","amigos"]
+];
+
+/* ============ STATE ============ */
+let notes = loadNotes();
+let history = [];
+let busy = false;          // true while thinking or speaking
+let wakeActive = false;    // true once wake word heard, waiting for command
+let recognition = null;
+let recognitionRunning = false;
+let micBlocked = false;    // true after mic permission denied — stops auto-retry loop
+let voices = [];
+let chosenVoice = null;
+let synapses = [];
+let rafId = null;
+
+function loadNotes(){
+  try{
+    const raw = localStorage.getItem("jarvis_notes");
+    if(raw){ const parsed = JSON.parse(raw); if(Array.isArray(parsed) && parsed.length) return parsed; }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_NOTES));
+}
+function saveNotes(){ localStorage.setItem("jarvis_notes", JSON.stringify(notes)); }
+
+/* ============ BOOT / ACTIVATION ============ */
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const boot = document.getElementById("bootScreen");
+    boot.classList.add("fade-out");
+    setTimeout(() => {
+      boot.classList.add("hidden");
+      document.getElementById("activationScreen").classList.remove("hidden");
+    }, 800);
+  }, 2200);
+});
+
+document.getElementById("activateBtn").addEventListener("click", () => {
+  document.getElementById("activationScreen").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  renderGraph();
+  startOrbAnim();
+  loadApiKey();
+  const greet = `Sistemas online. Estou ouvindo, ${CONFIG.address}.`;
+  setJarvisLine(greet);
+  speak(greet, () => {
+    setupRecognition();
+    requestMicAccess(() => startRecognition());
+  });
+});
+
+/* pede a permissão de microfone UMA vez, de forma explícita, antes de usar o SpeechRecognition */
+function requestMicAccess(onGranted){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    onGranted();
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then((stream) => {
+      stream.getTracks().forEach(t => t.stop());
+      micBlocked = false;
+      onGranted();
+    })
+    .catch(() => {
+      micBlocked = true;
+      showError("Permissão de microfone negada. Libere o acesso ao microfone para usar a voz.");
+    });
+}
+
+/* ============ API KEY ============ */
+function loadApiKey(){
+  const input = document.getElementById("apiKeyInput");
+  const saved = localStorage.getItem("anthropic_key");
+  if(saved){ input.value = saved; document.getElementById("apiKeyStatus").textContent = "chave salva"; }
+  input.addEventListener("change", () => {
+    localStorage.setItem("anthropic_key", input.value.trim());
+    document.getElementById("apiKeyStatus").textContent = input.value.trim() ? "chave salva" : "";
+  });
+}
+
+/* ============ ORB ============ */
+let orbState = "idle"; // idle, listening, thinking, speaking
+function startOrbAnim(){
+  const svg = document.getElementById("orbCanvasSvg");
+  let t = 0;
+  function frame(){
+    t += 0.03;
+    let r1=70, r2=55, r3=40, opacity=0.9;
+    if(orbState==="listening"){ r1 = 70 + Math.sin(t*3)*8; r2 = 55 + Math.sin(t*3+1)*6; }
+    else if(orbState==="thinking"){ r1 = 70 + Math.sin(t*8)*10; r3 = 40 + Math.sin(t*8)*6; }
+    else if(orbState==="speaking"){ r1 = 70 + Math.sin(t*5)*5; r2 = 55 + Math.sin(t*5+0.6)*8; r3 = 40 + Math.sin(t*5+1.2)*5; }
+    else { r1 = 70 + Math.sin(t)*3; }
+    svg.innerHTML =
+      '<defs><radialGradient id="orbGrad" cx="50%" cy="50%" r="50%">'+
+      '<stop offset="0%" stop-color="'+CONFIG.themeColor+'" stop-opacity="0.9"/>'+
+      '<stop offset="100%" stop-color="'+CONFIG.themeColor+'" stop-opacity="0"/>'+
+      '</radialGradient></defs>'+
+      '<circle cx="110" cy="110" r="'+r1+'" fill="url(#orbGrad)" opacity="0.5"/>'+
+      '<circle cx="110" cy="110" r="'+r2+'" fill="none" stroke="'+CONFIG.themeColor+'" stroke-width="1.5" opacity="0.6"/>'+
+      '<circle cx="110" cy="110" r="'+r3+'" fill="'+CONFIG.themeColor+'" opacity="'+opacity+'"/>';
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+document.getElementById("orbWrap").addEventListener("click", () => {
+  if(!busy) startRecognition(true);
+});
+
+function setOrbState(s){
+  orbState = s;
+  document.getElementById("orbStatus").textContent = {
+    idle:"OCIOSO", listening:"OUVINDO", thinking:"PENSANDO", speaking:"FALANDO"
+  }[s] || "OCIOSO";
+}
+
+/* ============ SPEECH RECOGNITION ============ */
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ showError("Reconhecimento de voz não é suportado neste navegador."); return; }
+  recognition = new SR();
+  recognition.lang = "pt-BR";
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => { recognitionRunning = true; };
+  recognition.onend = () => {
+    recognitionRunning = false;
+    if(!busy && !micBlocked){ startRecognition(); }
+  };
+  recognition.onerror = (e) => {
+    recognitionRunning = false;
+    if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+      micBlocked = true;
+      document.getElementById("micBtn").classList.remove("mic-active");
+      setOrbState("idle");
+      showError("Permissão de microfone negada. Libere o acesso ao microfone para usar a voz.");
+    }
+  };
+  recognition.onresult = (event) => {
+    const text = event.results[event.results.length - 1][0].transcript.trim();
+    handleHeard(text);
+  };
+}
+
+function startRecognition(forceActivate){
+  if(!recognition) return;
+  if(busy) return;
+  if(micBlocked){
+    requestMicAccess(() => startRecognition(forceActivate));
+    return;
+  }
+  if(forceActivate) wakeActive = true;
+  try{ recognition.start(); }catch(e){ /* already started, ignore */ }
+  setOrbState("listening");
+  document.getElementById("micBtn").classList.add("mic-active");
+}
+function stopRecognitionSoft(){
+  document.getElementById("micBtn").classList.remove("mic-active");
+}
+
+document.getElementById("micBtn").addEventListener("click", () => {
+  if(!busy) startRecognition(true);
+});
+
+function normalize(s){
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+}
+
+function handleHeard(rawText){
+  if(busy) return;
+  const norm = normalize(rawText);
+  const wake = normalize(CONFIG.wakeWord);
+
+  if(!wakeActive){
+    if(norm.includes(wake)){
+      const restIdx = norm.indexOf(wake) + wake.length;
+      const rest = norm.slice(restIdx).trim();
+      if(rest.length > 2){
+        routeUserText(rest);
+      } else {
+        wakeActive = true;
+        setJarvisLine("Diga, " + CONFIG.address + ".");
+        speak("Diga, " + CONFIG.address + ".");
+      }
+    }
+    return;
+  } else {
+    wakeActive = false;
+    routeUserText(rawText);
+  }
+}
+
+/* ============ TEXT INPUT ============ */
+document.getElementById("textInput").addEventListener("keydown", (e) => {
+  if(e.key === "Enter"){
+    const v = e.target.value.trim();
+    if(v){ e.target.value = ""; routeUserText(v); }
+  }
+});
+
+document.getElementById("stopBtn").addEventListener("click", () => {
+  speechSynthesis.cancel();
+  busy = false;
+  setOrbState("idle");
+  startRecognition();
+});
+
+/* ============ CLAUDE CALL ============ */
+function buildSecondBrainText(){
+  const byArea = {};
+  notes.forEach(n => {
+    if(!byArea[n.area]) byArea[n.area] = [];
+    byArea[n.area].push(n);
+  });
+  let out = "";
+  Object.keys(AREA).forEach(areaKey => {
+    const list = byArea[areaKey];
+    if(!list || !list.length) return;
+    out += `\n[${AREA[areaKey].label}]\n`;
+    list.forEach(n => { out += `- ${n.title}: ${n.body}\n`; });
+  });
+  return out;
+}
+
+function buildSystemPrompt(){
+  return `Você é ${CONFIG.name}, um assistente pessoal de voz para ${CONFIG.address}. `+
+  `Sua personalidade é ${CONFIG.persona}. Trate-o sempre como "${CONFIG.address}". `+
+  `Responda SEMPRE em português do Brasil, de forma curta e falada (2 a 4 frases), sem emojis e sem markdown, `+
+  `como se estivesse conversando de voz com ele.\n\n`+
+  `Aqui está o SECOND BRAIN completo de ${CONFIG.address} — use esse contexto para personalizar toda resposta:\n`+
+  buildSecondBrainText() +
+  `\n\nPROTOCOLO DE MEMÓRIA VIVA: se ${CONFIG.address} revelar algo novo e duradouro sobre a vida dele (uma meta, um projeto, uma decisão, um fato pessoal), `+
+  `termine sua resposta com uma linha no formato EXATO [[SAVE:area|titulo|texto]], onde area é uma destas: metas, trabalho, projetos, financas, aprendizado, saude, relacoes, meta. `+
+  `Se já existir uma nota com esse título, ela será atualizada; senão nasce uma nova. Inclua essa linha somente quando houver algo realmente novo para guardar.`;
+}
+
+function setProviderTag(provider, model){
+  const el = document.getElementById("jarvisProviderTag");
+  if(!el) return;
+  if(!provider){ el.classList.remove("show"); el.textContent = ""; return; }
+  const label = (allProviders()[provider] || {}).label || provider;
+  el.textContent = `via ${label}${model ? " · " + model : ""}`;
+  el.classList.add("show");
+}
+
+async function submitUserText(text){
+  if(!text || busy) return;
+  busy = true;
+  document.getElementById("youLine").textContent = text;
+  history.push({ role:"user", content: text });
+  setOrbState("thinking");
+  stopRecognitionSoft();
+  setProviderTag(null); // esconde a tag antiga enquanto a nova resposta não chega
+
+  try{
+    const result = await callLLM({ system: buildSystemPromptFull(), messages: history, maxTokens: 400, activity: "conversa" });
+    if(!result.ok){
+      setJarvisLine(result.errorMsg);
+      speak(result.errorMsg, endTurn);
+      return;
+    }
+    let replyText = result.text;
+
+    history.push({ role:"assistant", content: replyText });
+
+    const saveRegex = /\[\[SAVE:([a-z_]+)\|([^|]+)\|([\s\S]+?)\]\]/;
+    const match = replyText.match(saveRegex);
+    let savedNoteId = null;
+    if(match){
+      const [, area, title, body] = match;
+      savedNoteId = applySaveMemory(area.trim(), title.trim(), body.trim());
+      replyText = replyText.replace(saveRegex, "").trim();
+    }
+
+    setJarvisLine(replyText);
+    setProviderTag(result.provider, result.model);
+    speak(replyText, endTurn);
+
+    if(savedNoteId){ renderGraph(); blinkNode(savedNoteId); }
+
+  }catch(e){
+    const msg = "Não consegui me conectar à internet agora. Verifique sua conexão.";
+    setJarvisLine(msg);
+    speak(msg, endTurn);
+  }
+}
+
+function endTurn(){
+  busy = false;
+  setOrbState("idle");
+  startRecognition();
+}
+
+function applySaveMemory(area, title, body){
+  if(!AREA[area]) area = "meta";
+  const existing = notes.find(n => normalize(n.title) === normalize(title));
+  if(existing){
+    existing.body = body;
+    existing.area = area;
+    saveNotes();
+    return existing.id;
+  } else {
+    const id = "note_" + Date.now();
+    notes.push({ id, area, title, body });
+    saveNotes();
+    return id;
+  }
+}
+
+/* ============ TTS ============ */
+function loadVoices(){
+  voices = speechSynthesis.getVoices();
+  const ptBrVoices = voices.filter(v => v.lang && v.lang.toLowerCase() === "pt-br");
+  const ptVoices = ptBrVoices.length ? ptBrVoices : voices.filter(v => v.lang && v.lang.toLowerCase().startsWith("pt"));
+  const pool = ptVoices.length ? ptVoices : voices;
+  // prioriza uma voz masculina grave e formal, no estilo do Jarvis do Homem de Ferro
+  const jarvisNames = /daniel|antonio|antônio|ricardo|felipe|guy|george|david|male|homem/i;
+  chosenVoice = pool.find(v => jarvisNames.test(v.name)) || pool.find(v => v.default) || pool[0] || voices[0] || null;
+}
+if("speechSynthesis" in window){
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
+
+function speak(text, onDone){
+  if(!("speechSynthesis" in window)){ if(onDone) onDone(); return; }
+  busy = true;
+  setOrbState("speaking");
+  speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "pt-BR";
+  if(chosenVoice) utter.voice = chosenVoice;
+  // tom mais grave e ritmo mais calmo, no estilo do Jarvis do Homem de Ferro
+  utter.pitch = 0.82;
+  utter.rate = 0.95;
+  let finished = false;
+  const finish = () => {
+    if(finished) return;
+    finished = true;
+    clearTimeout(safetyTimer);
+    busy = false;
+    if(onDone) onDone();
+  };
+  utter.onend = finish;
+  utter.onerror = finish;
+  // alguns navegadores nunca disparam onend/onerror (bug conhecido) — evita travar em "busy" pra sempre
+  const safetyTimer = setTimeout(finish, Math.max(4000, text.length * 90));
+  speechSynthesis.speak(utter);
+}
+
+function setJarvisLine(t){ document.getElementById("jarvisLine").textContent = t; }
+
+/* ============ ERROR BANNER ============ */
+function showError(msg){
+  let banner = document.getElementById("errorBanner");
+  if(!banner){
+    banner = document.createElement("div");
+    banner.id = "errorBanner";
+    document.body.appendChild(banner);
+  }
+  banner.textContent = msg;
+  setTimeout(() => { if(banner.parentNode) banner.parentNode.removeChild(banner); }, 6000);
+}
+
+/* ============ SECOND BRAIN GRAPH ============ */
+function connectionCount(id){
+  return REL.filter(([a,b]) => a===id || b===id).length +
+         notes.filter(n2 => customRelCount(id)).length; // placeholder no-op
+}
+function customRelCount(){ return false; }
+
+function renderGraph(){
+  const container = document.getElementById("graphContainer");
+  const W = 1000, H = 540, cx = W/2, cy = H/2;
+  const n = notes.length;
+  const rx = Math.min(400, 180 + n*8);
+  const ry = Math.min(210, 110 + n*4);
+
+  const pos = {};
+  notes.forEach((note, i) => {
+    const angle = (i / Math.max(n,1)) * Math.PI * 2 - Math.PI/2;
+    pos[note.id] = { x: cx + rx*Math.cos(angle), y: cy + ry*Math.sin(angle), note };
+  });
+
+  const relCount = {};
+  REL.forEach(([a,b]) => {
+    if(pos[a] && pos[b]){
+      relCount[a] = (relCount[a]||0)+1;
+      relCount[b] = (relCount[b]||0)+1;
+    }
+  });
+
+  let defs = '<defs>'+
+    '<radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">'+
+      '<stop offset="0%" stop-color="'+CONFIG.themeColor+'" stop-opacity="1"/>'+
+      '<stop offset="60%" stop-color="'+CONFIG.themeColor+'" stop-opacity="0.5"/>'+
+      '<stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>'+
+    '</radialGradient>'+
+    '<linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">'+
+      '<stop offset="0%" stop-color="#8b5cf6"/>'+
+      '<stop offset="100%" stop-color="'+CONFIG.themeColor+'"/>'+
+    '</linearGradient>'+
+    '<filter id="glow" x="-60%" y="-60%" width="220%" height="220%">'+
+      '<feGaussianBlur stdDeviation="4" result="b"/>'+
+      '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
+    '</filter>'+
+  '</defs>';
+
+  let edgesHtml = "";
+  const curves = [];
+  REL.forEach(([a,b], idx) => {
+    const pa = pos[a], pb = pos[b];
+    if(!pa || !pb) return;
+    const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
+    const ctrlX = mx + (cx - mx)*0.35;
+    const ctrlY = my + (cy - my)*0.35;
+    const pathId = "edge_"+idx;
+    curves.push({ id: pathId, A: pa, B: pb, C: {x:ctrlX,y:ctrlY} });
+    edgesHtml += `<path id="${pathId}" d="M ${pa.x} ${pa.y} Q ${ctrlX} ${ctrlY} ${pb.x} ${pb.y}" `+
+      `fill="none" stroke="url(#edgeGrad)" stroke-width="1.2" opacity="0.45" `+
+      `stroke-dasharray="6 6" class="flowline"/>`;
+  });
+
+  let raysHtml = "";
+  notes.forEach(note => {
+    const p = pos[note.id];
+    const color = (AREA[note.area]||AREA.meta).color;
+    raysHtml += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${color}" stroke-width="0.6" opacity="0.18"/>`;
+  });
+
+  let nodesHtml = "";
+  notes.forEach(note => {
+    const p = pos[note.id];
+    const color = (AREA[note.area]||AREA.meta).color;
+    const conns = relCount[note.id] || 1;
+    const r = 14 + Math.min(conns, 8)*1.8;
+    nodesHtml += `<g class="graphNode" data-id="${note.id}" style="cursor:pointer;">`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r+6}" fill="none" stroke="${color}" stroke-width="1" opacity="0.35" class="breathe"/>`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" opacity="0.9" filter="url(#glow)"/>`+
+      `<text x="${p.x}" y="${p.y + r + 16}" text-anchor="middle" font-size="11" fill="#dfe8f5" font-family="inherit">${escapeXml(note.title)}</text>`+
+      `</g>`;
+  });
+
+  const coreHtml = `<circle cx="${cx}" cy="${cy}" r="34" fill="url(#coreGrad)" class="core-pulse"/>`+
+    `<text x="${cx}" y="${cy+7}" text-anchor="middle" font-size="24">🧠</text>`;
+
+  const style = `<style>
+    @keyframes dashmove{ to{ stroke-dashoffset:-120; } }
+    .flowline{ animation: dashmove 4s linear infinite; }
+    @keyframes breathe{ 0%,100%{ opacity:0.2; transform-origin:center; transform:scale(0.95);} 50%{ opacity:0.55; transform:scale(1.08);} }
+    .breathe{ animation: breathe 2.6s ease-in-out infinite; }
+    @keyframes corepulse{ 0%,100%{ opacity:0.8; } 50%{ opacity:1; } }
+    .core-pulse{ animation: corepulse 2.2s ease-in-out infinite; }
+    .node-blink circle{ animation: blinkNode 0.5s ease-in-out 4; }
+    @keyframes blinkNode{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(2.4);} }
+  </style>`;
+
+  const svgStr = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${style}${defs}${raysHtml}${edgesHtml}${nodesHtml}${coreHtml}<g id="synapseLayer"></g></svg>`;
+  container.innerHTML = svgStr;
+
+  container.querySelectorAll(".graphNode").forEach(g => {
+    g.addEventListener("click", () => openEditor(g.getAttribute("data-id")));
+  });
+
+  updateBrainCount();
+  renderLegend();
+  setupSynapses(curves, container.querySelector("#synapseLayer"));
+}
+
+function escapeXml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function setupSynapses(curves, layer){
+  if(rafId) cancelAnimationFrame(rafId);
+  if(!curves.length || !layer) return;
+  synapses = [];
+  const total = Math.min(12, curves.length*2);
+  for(let i=0;i<total;i++){
+    synapses.push(spawnSynapse(curves));
+  }
+  function spawnSynapse(curveList){
+    const curve = curveList[Math.floor(Math.random()*curveList.length)];
+    return { curve, t: Math.random(), speed: 0.004 + Math.random()*0.006 };
+  }
+  function frame(){
+    let html = "";
+    synapses.forEach((s, i) => {
+      s.t += s.speed;
+      if(s.t > 1){ s.t = 0; s.curve = curves[Math.floor(Math.random()*curves.length)]; }
+      const t = s.t;
+      const A = s.curve.A, B = s.curve.B, C = s.curve.C;
+      const x = (1-t)*(1-t)*A.x + 2*(1-t)*t*C.x + t*t*B.x;
+      const y = (1-t)*(1-t)*A.y + 2*(1-t)*t*C.y + t*t*B.y;
+      const op = Math.sin(t*Math.PI);
+      html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.4" fill="#ffffff" opacity="${op.toFixed(2)}"/>`;
+    });
+    if(layer.isConnected){ layer.innerHTML = html; }
+    rafId = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function blinkNode(id){
+  const g = document.querySelector(`.graphNode[data-id="${id}"]`);
+  if(g){ g.classList.add("node-blink"); setTimeout(()=>g.classList.remove("node-blink"), 2200); }
+}
+
+function updateBrainCount(){
+  const areasUsed = new Set(notes.map(n=>n.area));
+  document.getElementById("brainCount").textContent = `${notes.length} notas · ${areasUsed.size} áreas`;
+}
+
+function renderLegend(){
+  const areasUsed = [...new Set(notes.map(n=>n.area))];
+  let html = areasUsed.map(a => {
+    const info = AREA[a] || AREA.meta;
+    return `<span><span class="dot" style="background:${info.color}"></span>${info.label}</span>`;
+  }).join("");
+  html += `<span class="injected">✓ contexto injetado em todos os comandos do ${CONFIG.name}</span>`;
+  document.getElementById("legend").innerHTML = html;
+}
+
+document.getElementById("reloadBtn").addEventListener("click", () => { notes = loadNotes(); renderGraph(); });
+
+/* ============ NOTE EDITOR ============ */
+let editingId = null;
+function openEditor(id){
+  editingId = id;
+  const overlay = document.getElementById("editorOverlay");
+  const areaSelect = document.getElementById("editArea");
+  areaSelect.innerHTML = Object.keys(AREA).map(k => `<option value="${k}">${AREA[k].label}</option>`).join("");
+
+  if(id){
+    const note = notes.find(n => n.id === id);
+    document.getElementById("editorTitle").textContent = "Editar Nota";
+    document.getElementById("editTitle").value = note.title;
+    areaSelect.value = note.area;
+    document.getElementById("editBody").value = note.body;
+    document.getElementById("deleteNoteBtn").classList.remove("hidden");
+  } else {
+    document.getElementById("editorTitle").textContent = "Nova Nota";
+    document.getElementById("editTitle").value = "";
+    areaSelect.value = "meta";
+    document.getElementById("editBody").value = "";
+    document.getElementById("deleteNoteBtn").classList.add("hidden");
+  }
+  overlay.classList.remove("hidden");
+}
+function closeEditor(){ document.getElementById("editorOverlay").classList.add("hidden"); editingId = null; }
+
+document.getElementById("addNoteBtn").addEventListener("click", () => openEditor(null));
+document.getElementById("cancelEditBtn").addEventListener("click", closeEditor);
+
+document.getElementById("saveNoteBtn").addEventListener("click", () => {
+  const title = document.getElementById("editTitle").value.trim();
+  const area = document.getElementById("editArea").value;
+  const body = document.getElementById("editBody").value.trim();
+  if(!title || !body){ return; }
+  if(editingId){
+    const note = notes.find(n => n.id === editingId);
+    note.title = title; note.area = area; note.body = body;
+  } else {
+    notes.push({ id: "note_"+Date.now(), area, title, body });
+  }
+  saveNotes();
+  closeEditor();
+  renderGraph();
+});
+
+document.getElementById("deleteNoteBtn").addEventListener("click", () => {
+  if(!editingId) return;
+  notes = notes.filter(n => n.id !== editingId);
+  saveNotes();
+  closeEditor();
+  renderGraph();
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   UPGRADE — AGENDA · E-MAILS · NOTÍCIAS · DIGEST
+   Tudo abaixo é ADITIVO: não reescreve nada da Parte 1, só envelopa
+   os pontos de integração (routeUserText chama submitUserText no
+   fallback, buildSystemPromptFull chama buildSystemPrompt por baixo).
+   ═══════════════════════════════════════════════════════════════ */
+
+const ANTENNA_BASE = "http://127.0.0.1:4242";
+const DISPLAY_TZ = "America/Sao_Paulo";
+let antennaOnline = null;
+
+function loadJSON(key, fallback){
+  try{ const raw = localStorage.getItem(key); if(raw) return JSON.parse(raw); }catch(e){}
+  return fallback;
+}
+function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+function escapeAttr(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+
+/* ---- defaults da entrevista da Parte 2 ---- */
+const DEFAULT_CALENDARS = [
+  { id:"cal_pessoal",      name:"Pessoal",         color:"#22c3ff", url:"", provider:"google"  },
+  { id:"cal_murus",        name:"Murus Seguros",   color:"#fbbf24", url:"", provider:"titan"   },
+  { id:"cal_profissional", name:"Profissional",    color:"#ff9500", url:"", provider:"outlook" }
+];
+/* titan não tem host fixo — o servidor IMAP varia por conta (ex: imap0101.titan.email), fica em branco até o usuário preencher */
+const HOST_BY_PROVIDER = { gmail:"imap.gmail.com", outlook:"outlook.office365.com" };
+const DEFAULT_EMAIL_ACCOUNTS = [
+  { id:"em_pessoal",      nickname:"Pessoal",      email:"", appPassword:"", color:"#22c3ff", provider:"gmail",   host:HOST_BY_PROVIDER.gmail   },
+  { id:"em_murus",        nickname:"Murus",        email:"", appPassword:"", color:"#fbbf24", provider:"titan",   host:""   },
+  { id:"em_profissional", nickname:"Profissional", email:"", appPassword:"", color:"#ff9500", provider:"outlook", host:HOST_BY_PROVIDER.outlook }
+];
+const DEFAULT_NEWS_TOPICS = ["tecnologia","economia","mercado de energia"];
+const DEFAULT_DIGEST_SETTINGS = {
+  weather:true, citiesPrimary:"Embu das Artes", citySecondary:"São Paulo",
+  triggerAuto:true, triggerVoice:true, triggerButton:true, length:"curto", speak:true
+};
+/* provedores de IA suportados — Anthropic é pago por uso; Gemini e Groq têm
+   camada gratuita (sem cartão), pra quem não quer colocar crédito na API */
+const PROVIDERS = {
+  anthropic: {
+    label: "Anthropic (Claude)",
+    keyKey: "anthropic_key",
+    keyHelp: "pago por uso — console.anthropic.com → API Keys",
+    models: { economico:"claude-haiku-4-5-20251001", equilibrado:"claude-sonnet-5", maximo:"claude-opus-5" }
+  },
+  gemini: {
+    label: "Google Gemini",
+    keyKey: "gemini_key",
+    keyHelp: "grátis, sem cartão — aistudio.google.com → Get API key",
+    models: { economico:"gemini-2.0-flash", equilibrado:"gemini-2.5-flash", maximo:"gemini-2.5-pro" }
+  },
+  groq: {
+    label: "Groq",
+    keyKey: "groq_key",
+    keyHelp: "grátis, sem cartão — console.groq.com/keys",
+    openaiCompat: true, baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+    models: { economico:"llama-3.1-8b-instant", equilibrado:"llama-3.3-70b-versatile", maximo:"llama-3.3-70b-versatile" }
+  },
+  openrouter: {
+    label: "OpenRouter",
+    keyKey: "openrouter_key",
+    keyHelp: "grátis (modelos marcados :free) — openrouter.ai/keys",
+    openaiCompat: true, baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+    models: { economico:"meta-llama/llama-3.1-8b-instruct:free", equilibrado:"google/gemini-2.0-flash-exp:free", maximo:"deepseek/deepseek-chat-v3-0324:free" }
+  },
+  mistral: {
+    label: "Mistral",
+    keyKey: "mistral_key",
+    keyHelp: "grátis, sem cartão (~1bi tokens/mês) — console.mistral.ai",
+    openaiCompat: true, baseUrl: "https://api.mistral.ai/v1/chat/completions",
+    models: { economico:"mistral-small-latest", equilibrado:"mistral-medium-latest", maximo:"mistral-large-latest" }
+  },
+  cerebras: {
+    label: "Cerebras",
+    keyKey: "cerebras_key",
+    keyHelp: "grátis, sem cartão (1M tokens/dia, super rápido) — cloud.cerebras.ai",
+    openaiCompat: true, baseUrl: "https://api.cerebras.ai/v1/chat/completions",
+    models: { economico:"llama3.1-8b", equilibrado:"llama-3.3-70b", maximo:"llama-3.3-70b" }
+  },
+  perplexity: {
+    label: "Perplexity (pago)",
+    keyKey: "perplexity_key",
+    keyHelp: "PAGO desde o primeiro request, sem camada gratuita — perplexity.ai/settings/api",
+    openaiCompat: true, baseUrl: "https://api.perplexity.ai/chat/completions",
+    models: { economico:"sonar", equilibrado:"sonar-pro", maximo:"sonar-pro" }
+  },
+  openai: {
+    label: "OpenAI (ChatGPT) (pago)",
+    keyKey: "openai_key",
+    keyHelp: "PAGO por uso, sem camada gratuita geral (só $5 de crédito único em contas novas) — platform.openai.com",
+    openaiCompat: true, baseUrl: "https://api.openai.com/v1/chat/completions",
+    models: { economico:"gpt-5-mini", equilibrado:"gpt-5.4", maximo:"gpt-5.5" }
+  }
+};
+const TIER_LABELS = { economico:"ECONÔMICO", equilibrado:"EQUILIBRADO", maximo:"MÁXIMO" };
+const LEGACY_TIER_MAP = { haiku:"economico", sonnet:"equilibrado", opus:"maximo" }; // valores salvos antes de existir multi-provedor
+
+/* provedores personalizados (qualquer serviço compatível com o formato de chat
+   da OpenAI — cobre Together.ai, Fireworks, Ollama local, etc.) — 👈 EDITE AQUI
+   também dá pra adicionar pelo painel ⚙, sem mexer no código */
+let customProviders = loadJSON("jarvis_custom_providers", []); // [{id,label,baseUrl,model,keyKey}]
+function saveCustomProviders(){ saveJSON("jarvis_custom_providers", customProviders); }
+function allProviders(){
+  const map = Object.assign({}, PROVIDERS);
+  customProviders.forEach(cp => {
+    map[cp.id] = {
+      label: cp.label + " (personalizado)", keyKey: cp.keyKey, keyHelp: cp.baseUrl,
+      openaiCompat: true, baseUrl: cp.baseUrl, isCustom: true,
+      models: { economico: cp.model, equilibrado: cp.model, maximo: cp.model }
+    };
+  });
+  return map;
+}
+
+/* ---- modo automático: roteia por atividade + complexidade da pergunta ----
+   Ordem de preferência por atividade — o primeiro da lista que tiver chave
+   configurada é usado. Groq é rápido (bom pra pergunta curta/triagem);
+   Gemini tende a escrever melhor (bom pra pergunta complexa/digest).
+   👈 EDITE AQUI pra mudar a prioridade. */
+const AUTO_ROUTES = {
+  conversa_simples:  ["cerebras", "groq", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
+  conversa_complexa: ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
+  triagem_email:      ["groq", "cerebras", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
+  digest:             ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"]
+};
+let autoMode = localStorage.getItem("jarvis_auto_mode") !== "0"; // padrão ligado
+
+function providerHasKey(id, providersMap){
+  const p = (providersMap||allProviders())[id];
+  return !!(p && (localStorage.getItem(p.keyKey)||"").trim());
+}
+function classifyComplexity(text){
+  const t = normalize(text||"");
+  const wordCount = t.split(/\s+/).filter(Boolean).length;
+  const complexSignals = /explica|analisa|compara|resumo|resume|escreve um|escreva um|codigo|code|passo a passo|detalhe|detalhad|por que|justifi|planeje|plano de|estrategia/;
+  return (wordCount > 25 || complexSignals.test(t)) ? "complexa" : "simples";
+}
+/* escolhe provedor+modelo pra uma atividade; devolve null se nenhum provedor
+   configurado tiver chave (aí quem chamou usa o provedor manual pra dar o
+   aviso certo de "falta chave"). */
+function pickProviderForActivity(activity, text){
+  const candidates = pickProviderCandidates(activity, text);
+  return candidates.length ? candidates[0] : null;
+}
+/* mesma ordem do pickProviderForActivity, mas devolve TODOS os provedores
+   configurados (com chave) na fila — usado pra tentar o próximo se o
+   primeiro falhar (ex: Groq fora do ar), em vez de desistir na primeira. */
+function pickProviderCandidates(activity, text){
+  const providersMap = allProviders();
+  let key = activity;
+  if(activity === "conversa") key = "conversa_" + classifyComplexity(text);
+  const order = AUTO_ROUTES[key] || AUTO_ROUTES.conversa_simples;
+  const fullOrder = [...order, ...Object.keys(providersMap).filter(id=>!order.includes(id))];
+  return fullOrder.filter(id => providerHasKey(id, providersMap)).map(id => ({ provider:id, tier: modelTier }));
+}
+
+let calendars      = loadJSON("jarvis_calendars", DEFAULT_CALENDARS);
+let emailAccounts  = loadJSON("jarvis_emails", DEFAULT_EMAIL_ACCOUNTS);
+let newsTopics     = loadJSON("jarvis_news_topics", DEFAULT_NEWS_TOPICS);
+let digestSettings = loadJSON("jarvis_digest_settings", DEFAULT_DIGEST_SETTINGS);
+let selectedProvider = localStorage.getItem("jarvis_provider") || "anthropic";
+if(!PROVIDERS[selectedProvider]) selectedProvider = "anthropic";
+let modelTier = LEGACY_TIER_MAP[localStorage.getItem("jarvis_model_level")] || localStorage.getItem("jarvis_model_level") || "equilibrado";
+if(!TIER_LABELS[modelTier]) modelTier = "equilibrado";
+let economyMode    = localStorage.getItem("jarvis_economy_mode") !== "0";
+
+function currentProviderKey(){ const p = allProviders()[selectedProvider]; return (localStorage.getItem(p.keyKey) || "").trim(); }
+function currentModel(){ const p = allProviders()[selectedProvider]; return p.models[modelTier] || p.models.equilibrado; }
+/* true se PELO MENOS UM provedor (manual ou não) tiver chave — usado como
+   guarda antes de tentar chamar a API, já que no modo automático o provedor
+   usado de fato pode não ser o selecionado manualmente */
+function anyProviderHasKey(){
+  const providersMap = allProviders();
+  return Object.keys(providersMap).some(id => providerHasKey(id, providersMap));
+}
+
+/* chamada única que fala com qualquer um dos provedores — nunca lança
+   exceção, sempre devolve { ok, text } ou { ok:false, errorMsg }. */
+async function callLLM({ system, messages, maxTokens, activity }){
+  // modo automático: tenta cada provedor configurado na ordem de prioridade
+  // da atividade; se um falhar (erro de rede, chave recusada, fora do ar),
+  // tenta o próximo da fila em vez de desistir na primeira falha.
+  if(autoMode && activity){
+    const lastUserMsg = [...messages].reverse().find(m=>m.role==="user");
+    const candidates = pickProviderCandidates(activity, lastUserMsg ? lastUserMsg.content : "");
+    if(candidates.length){
+      let lastResult = null;
+      for(const { provider, tier } of candidates){
+        const result = await callLLMProvider({ system, messages, maxTokens, provider, tier });
+        if(result.ok) return result;
+        console.warn(`[jarvis] ${provider} falhou (${result.errorMsg}) — tentando próximo provedor da fila...`);
+        lastResult = result;
+      }
+      return lastResult;
+    }
+  }
+  return callLLMProvider({ system, messages, maxTokens, provider: selectedProvider, tier: modelTier });
+}
+
+async function callLLMProvider({ system, messages, maxTokens, provider, tier }){
+  const providersMap = allProviders();
+  const pconf = providersMap[provider];
+  const key = (localStorage.getItem(pconf.keyKey) || "").trim();
+  if(!key) return { ok:false, errorMsg: `Preciso de uma chave de API do ${pconf.label}. Cole em ⚙ → Motor & Economia.` };
+  const model = pconf.models[tier] || pconf.models.equilibrado;
+  console.log(`[jarvis] provedor=${provider} modelo=${model}${autoMode?" (auto)":""}`);
+
+  async function errMsg(res){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = (errBody.error && (errBody.error.message || errBody.error)) || errBody.message || "";
+      if(typeof detail !== "string") detail = JSON.stringify(detail);
+    }catch(e){}
+    console.error(`[jarvis] erro da API ${provider} — status ${res.status}: ${detail}`);
+    if(res.status === 401 || res.status === 403) return "A chave de API foi recusada — confira se colou certinho, sem espaço extra.";
+    if(res.status === 404) return `O modelo "${model}" não foi encontrado nesse provedor — tenta trocar o nível em Motor & Economia.`;
+    if(res.status === 429) return "Muitas chamadas seguidas pra API — espera um pouco e tenta de novo.";
+    if(res.status === 400) return "A chamada pra API veio malformada" + (detail ? ": " + detail : ".");
+    return `Deu erro na chamada da API (status ${res.status})` + (detail ? ": " + detail : ".");
+  }
+
+  try{
+    if(provider === "anthropic"){
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "x-api-key":key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true", "content-type":"application/json" },
+        body: JSON.stringify({ model, max_tokens:maxTokens, system, messages })
+      });
+      if(!res.ok) return { ok:false, errorMsg: await errMsg(res) };
+      const data = await res.json();
+      const text = (data.content && data.content[0] && data.content[0].text) || "";
+      return text ? { ok:true, text, provider, model } : { ok:false, errorMsg:"Não recebi resposta do modelo. Tente novamente." };
+    }
+
+    if(provider === "gemini"){
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts:[{ text: m.content }] }));
+      const res = await fetch(url, {
+        method:"POST", headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ systemInstruction:{ parts:[{ text:system }] }, contents, generationConfig:{ maxOutputTokens:maxTokens } })
+      });
+      if(!res.ok) return { ok:false, errorMsg: await errMsg(res) };
+      const data = await res.json();
+      const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+      const text = (parts && parts[0] && parts[0].text) || "";
+      return text ? { ok:true, text, provider, model } : { ok:false, errorMsg:"Não recebi resposta do modelo. Tente novamente." };
+    }
+
+    // Groq, OpenRouter e provedores personalizados usam o mesmo formato (chat
+    // completions no estilo OpenAI) — um único caminho de código pros três.
+    if(pconf.openaiCompat){
+      const res = await fetch(pconf.baseUrl, {
+        method:"POST", headers:{ "authorization":"Bearer "+key, "content-type":"application/json" },
+        body: JSON.stringify({ model, max_tokens:maxTokens, messages: [{ role:"system", content:system }, ...messages] })
+      });
+      if(!res.ok) return { ok:false, errorMsg: await errMsg(res) };
+      const data = await res.json();
+      const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+      return text ? { ok:true, text, provider, model } : { ok:false, errorMsg:"Não recebi resposta do modelo. Tente novamente." };
+    }
+
+    return { ok:false, errorMsg:"Provedor desconhecido." };
+  }catch(e){
+    return { ok:false, errorMsg:"Não consegui me conectar à internet agora. Verifique sua conexão." };
+  }
+}
+
+let calendarEvents     = [];
+let emailTriageCache   = loadJSON("jarvis_email_triage", {});
+let newsCache          = loadJSON("jarvis_news_cache", {});
+let weatherGeoCache     = loadJSON("jarvis_weather_geo", {});
+
+function saveCalendars(){ saveJSON("jarvis_calendars", calendars); }
+function saveEmailAccounts(){ saveJSON("jarvis_emails", emailAccounts); }
+function saveNewsTopics(){ saveJSON("jarvis_news_topics", newsTopics); }
+function saveDigestSettings(){ saveJSON("jarvis_digest_settings", digestSettings); }
+function saveEmailTriageCache(){ saveJSON("jarvis_email_triage", emailTriageCache); }
+function saveNewsCache(){ saveJSON("jarvis_news_cache", newsCache); }
+
+/* ============ ANTENA ============ */
+async function pingAntenna(){
+  try{
+    const res = await fetch(ANTENNA_BASE + "/ping", { cache:"no-store" });
+    antennaOnline = res.ok;
+  }catch(e){ antennaOnline = false; }
+  updateAntennaStatusUI();
+  return antennaOnline;
+}
+function updateAntennaStatusUI(){
+  const el = document.getElementById("antennaStatus");
+  if(!el) return;
+  if(antennaOnline){
+    el.innerHTML = "⚡ Antena online — porta 4242.";
+    el.style.color = "#22c55e"; el.style.borderColor = "#1c5c34"; el.style.background = "#0a2015";
+  } else {
+    el.innerHTML = 'ANTENA OFFLINE — abra um terminal na pasta do Jarvis e rode <code>node server.js</code> pra ligar agenda, e-mails e notícias.';
+    el.style.color = ""; el.style.borderColor = ""; el.style.background = "";
+  }
+}
+async function proxyFetchText(url){
+  const res = await fetch(ANTENNA_BASE + "/proxy?url=" + encodeURIComponent(url));
+  if(!res.ok) throw new Error("proxy_error_"+res.status);
+  return await res.text();
+}
+function offlineNoteHTML(){
+  return '<div class="offlineNote">ANTENA OFFLINE — abra um terminal na pasta do Jarvis e rode <code>node server.js</code> pra ver isso aqui.</div>';
+}
+
+/* ============ TABS ============ */
+function switchTab(tab){
+  document.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  ["agenda","emails","news","digest","agents"].forEach(t => {
+    const p = document.getElementById("panel-"+t);
+    if(p) p.classList.toggle("hidden", t !== tab);
+  });
+}
+document.querySelectorAll(".tabbtn").forEach(btn => btn.addEventListener("click", () => {
+  // abas externas (ex: 🪙 TOKENS) abrem outro arquivo em nova aba, sem trocar o painel atual
+  if(btn.dataset.external){ window.open(btn.dataset.external, "_blank"); return; }
+  switchTab(btn.dataset.tab);
+}));
+
+/* ============ TEMPO / TIMEZONE ============ */
+function zonedWallClockToUtcMs(y,mo,d,h,mi,s,tzid){
+  try{
+    const asUTC = Date.UTC(y,mo,d,h,mi,s);
+    const fmt = new Intl.DateTimeFormat("en-US", { timeZone:tzid, hour12:false,
+      year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+    const parts = fmt.formatToParts(new Date(asUTC));
+    const get = t => +parts.find(p=>p.type===t).value;
+    let hh = get("hour"); if(hh===24) hh=0;
+    const asIfUTC = Date.UTC(get("year"), get("month")-1, get("day"), hh, get("minute"), get("second"));
+    const offset = asIfUTC - asUTC;
+    return asUTC - offset;
+  }catch(e){
+    return Date.UTC(y,mo,d,h,mi,s) + 3*3600*1000;
+  }
+}
+function startOfTodayMs(){
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: DISPLAY_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
+  const parts = fmt.formatToParts(new Date());
+  const get = t => +parts.find(p=>p.type===t).value;
+  return zonedWallClockToUtcMs(get("year"), get("month")-1, get("day"), 0,0,0, DISPLAY_TZ);
+}
+function dayKey(ms){
+  return new Intl.DateTimeFormat("en-CA", { timeZone: DISPLAY_TZ, year:"numeric", month:"2-digit", day:"2-digit" }).format(new Date(ms));
+}
+function dayLabelFromKey(key){
+  const todayKey = dayKey(Date.now());
+  const tmrwKey = dayKey(Date.now()+24*3600*1000);
+  if(key === todayKey) return "HOJE";
+  if(key === tmrwKey) return "AMANHÃ";
+  const [y,m,d] = key.split("-").map(Number);
+  const dow = new Date(Date.UTC(y,m-1,d)).getUTCDay();
+  const names = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
+  return `${names[dow]} · ${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}`;
+}
+function formatTime(ms){
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: DISPLAY_TZ, hour:"2-digit", minute:"2-digit" }).format(new Date(ms));
+}
+function countdownLabel(deltaMs){
+  if(deltaMs < 0) return "agora";
+  const totalMin = Math.round(deltaMs/60000);
+  const h = Math.floor(totalMin/60), m = totalMin%60;
+  return h>0 ? `em ${h}h ${m}min` : `em ${m}min`;
+}
+
+/* ============ PARSER ICS ============ */
+function unfoldICS(text){
+  return text.replace(/\r\n/g,"\n").split("\n").reduce((lines, line) => {
+    if((line.startsWith(" ") || line.startsWith("\t")) && lines.length){
+      lines[lines.length-1] += line.slice(1);
+    } else if(line.length){
+      lines.push(line);
+    }
+    return lines;
+  }, []);
+}
+function decodeICSText(s){
+  return s.replace(/\\n/gi,"\n").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
+}
+function parseICSLineKV(line){
+  const colonIdx = line.indexOf(":");
+  if(colonIdx === -1) return null;
+  const left = line.slice(0, colonIdx);
+  const value = line.slice(colonIdx+1);
+  const parts = left.split(";");
+  const name = parts[0].toUpperCase();
+  const params = {};
+  parts.slice(1).forEach(p => {
+    const eq = p.indexOf("=");
+    if(eq>-1) params[p.slice(0,eq).toUpperCase()] = p.slice(eq+1);
+  });
+  return { name, params, value };
+}
+function parseICSDate(value, params){
+  const isDateOnly = (params.VALUE === "DATE") || /^\d{8}$/.test(value);
+  if(isDateOnly){
+    return { allDay:true, y:+value.slice(0,4), m:+value.slice(4,6), d:+value.slice(6,8) };
+  }
+  const isUTC = value.endsWith("Z");
+  const clean = value.replace("Z","");
+  const y=+clean.slice(0,4), mo=+clean.slice(4,6), d=+clean.slice(6,8);
+  const h=+clean.slice(9,11)||0, mi=+clean.slice(11,13)||0, s=+clean.slice(13,15)||0;
+  const ms = isUTC ? Date.UTC(y,mo-1,d,h,mi,s) : zonedWallClockToUtcMs(y,mo-1,d,h,mi,s, params.TZID || DISPLAY_TZ);
+  return { allDay:false, ms };
+}
+function buildEventObj(ev, startDate, calMeta){
+  const allDay = startDate.allDay;
+  // meio-dia UTC (não meia-noite) evita que o fuso America/Sao_Paulo empurre a data pro dia anterior
+  const startMs = allDay ? Date.UTC(startDate.y, startDate.m-1, startDate.d, 12) : startDate.ms;
+  let endMs = startMs + 3600*1000;
+  if(ev.dtend && !allDay) endMs = ev.dtend.ms;
+  return { title: ev.title || "(sem título)", location: ev.location || "", startMs, endMs, allDay,
+    calId: calMeta.id, calName: calMeta.name, calColor: calMeta.color };
+}
+function expandRRule(ev, windowStart, windowEnd){
+  const occurrences = [];
+  const rule = {};
+  ev.rrule.split(";").forEach(p => { const [k,v] = p.split("="); if(k) rule[k]=v; });
+  const freq = rule.FREQ;
+  if(!freq) return [ev.dtstart];
+  const interval = parseInt(rule.INTERVAL||"1",10) || 1;
+  const count = rule.COUNT ? parseInt(rule.COUNT,10) : null;
+  let until = null;
+  if(rule.UNTIL){ const u = parseICSDate(rule.UNTIL, {}); until = u.allDay ? Date.UTC(u.y,u.m-1,u.d,23,59,59) : u.ms; }
+  const byday = rule.BYDAY ? rule.BYDAY.split(",") : null;
+  const DOW = { SU:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6 };
+  const start = ev.dtstart;
+  const startMs = start.allDay ? Date.UTC(start.y,start.m-1,start.d) : start.ms;
+  const excluded = new Set((ev.exdates||[]).map(x => x.allDay ? Date.UTC(x.y,x.m-1,x.d) : x.ms));
+  let generated = 0, iter = 0;
+  let cursor = new Date(startMs);
+  const MAXITER = 3000;
+  while(iter++ < MAXITER){
+    const occMs = cursor.getTime();
+    let matches = true;
+    if(freq === "WEEKLY" && byday){
+      const dow = cursor.getUTCDay();
+      matches = byday.some(bd => DOW[bd.slice(-2)] === dow);
+    }
+    if(matches){
+      if(!excluded.has(occMs)){
+        if(occMs >= windowStart - 24*3600*1000 && occMs <= windowEnd){
+          occurrences.push(start.allDay
+            ? { allDay:true, y:cursor.getUTCFullYear(), m:cursor.getUTCMonth()+1, d:cursor.getUTCDate() }
+            : { allDay:false, ms:occMs });
+        }
+        generated++;
+        if(count && generated >= count) break;
+      }
+    }
+    if(until && occMs > until) break;
+    if(occMs > windowEnd + 3600*1000) break;
+    if(freq === "DAILY") cursor = new Date(cursor.getTime() + interval*24*3600*1000);
+    else if(freq === "WEEKLY") cursor = new Date(cursor.getTime() + (byday ? 1 : interval*7)*24*3600*1000);
+    else if(freq === "MONTHLY") cursor.setUTCMonth(cursor.getUTCMonth()+interval);
+    else if(freq === "YEARLY") cursor.setUTCFullYear(cursor.getUTCFullYear()+interval);
+    else break;
+  }
+  return occurrences;
+}
+function parseICS(text, calMeta){
+  const events = [];
+  try{
+    const lines = unfoldICS(text);
+    let cur = null;
+    lines.forEach(line => {
+      const t = line.trim();
+      if(t === "BEGIN:VEVENT"){ cur = { exdates:[] }; return; }
+      if(t === "END:VEVENT"){ if(cur) events.push(cur); cur=null; return; }
+      if(!cur) return;
+      const kv = parseICSLineKV(t);
+      if(!kv) return;
+      try{
+        if(kv.name === "SUMMARY") cur.title = decodeICSText(kv.value);
+        else if(kv.name === "LOCATION") cur.location = decodeICSText(kv.value);
+        else if(kv.name === "DTSTART") cur.dtstart = parseICSDate(kv.value, kv.params);
+        else if(kv.name === "DTEND") cur.dtend = parseICSDate(kv.value, kv.params);
+        else if(kv.name === "RRULE") cur.rrule = kv.value;
+        else if(kv.name === "EXDATE") cur.exdates.push(parseICSDate(kv.value, kv.params));
+      }catch(e){ /* campo problemático — ignora e segue o evento */ }
+    });
+  }catch(e){ /* ICS malformado — devolve o que conseguiu até aqui */ }
+
+  const out = [];
+  const windowStart = startOfTodayMs();
+  const windowEnd = windowStart + 8*24*3600*1000;
+  events.forEach(ev => {
+    if(!ev.dtstart) return;
+    try{
+      if(ev.rrule){
+        expandRRule(ev, windowStart, windowEnd).forEach(occ => out.push(buildEventObj(ev, occ, calMeta)));
+      } else {
+        const startMs = ev.dtstart.allDay ? Date.UTC(ev.dtstart.y, ev.dtstart.m-1, ev.dtstart.d) : ev.dtstart.ms;
+        if(startMs >= windowStart - 24*3600*1000 && startMs <= windowEnd) out.push(buildEventObj(ev, ev.dtstart, calMeta));
+      }
+    }catch(e){ /* evento problemático — ignora e segue com os outros */ }
+  });
+  return out;
+}
+
+/* ============ AGENDA ============ */
+async function fetchAllCalendars(){
+  const results = [];
+  for(const cal of calendars){
+    if(!cal.url) continue;
+    try{
+      const text = await proxyFetchText(cal.url);
+      results.push(...parseICS(text, cal));
+    }catch(e){
+      results.push({ error:true, calId:cal.id, calName:cal.name, message:"não consegui carregar essa agenda" });
+    }
+  }
+  results.sort((a,b) => (a.startMs||0) - (b.startMs||0));
+  calendarEvents = results;
+  renderAgendaPanel();
+  return results;
+}
+function groupEventsByDay(events){
+  const groups = {}, order = [];
+  events.forEach(ev => {
+    const k = dayKey(ev.startMs);
+    if(!groups[k]){ groups[k]=[]; order.push(k); }
+    groups[k].push(ev);
+  });
+  return order.map(k => ({ label: dayLabelFromKey(k), events: groups[k] }));
+}
+function renderAgendaPanel(){
+  const el = document.getElementById("agendaContent");
+  if(!el) return;
+  if(antennaOnline === false){ el.innerHTML = offlineNoteHTML(); return; }
+  if(!calendars.some(c=>c.url)){ el.innerHTML = '<div class="offlineNote">Nenhuma agenda configurada ainda. Clique em ⚙ e cole o link ICS de cada agenda.</div>'; return; }
+  const errors = calendarEvents.filter(e=>e.error);
+  const events = calendarEvents.filter(e=>!e.error);
+  let html = "";
+  errors.forEach(e => { html += `<div class="offlineNote" style="margin-bottom:8px;">⚠ Agenda "${escapeXml(e.calName)}": ${escapeXml(e.message)}.</div>`; });
+  const now = Date.now();
+  const next = events.find(e => !e.allDay && e.startMs > now);
+  if(next) html += `<div class="agendaCountdown">⏱ Próximo: ${escapeXml(next.title)} — ${countdownLabel(next.startMs-now)}</div>`;
+  const groups = groupEventsByDay(events);
+  groups.forEach(g => {
+    html += `<div class="dayGroupLabel">${g.label}</div>`;
+    g.events.forEach(ev => {
+      html += `<div class="eventRow">
+        <div class="eventDot" style="background:${ev.calColor}"></div>
+        <div class="eventTime">${ev.allDay ? "DIA TODO" : formatTime(ev.startMs)}</div>
+        <div class="eventBody">
+          <div class="eventTitle">${escapeXml(ev.title)}</div>
+          ${ev.location ? `<div class="eventLoc">📍 ${escapeXml(ev.location)}</div>` : ""}
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html || '<div class="offlineNote">Nenhum evento nos próximos 7 dias.</div>';
+}
+function todayEventsCompactText(){
+  const todayKey = dayKey(Date.now());
+  const todays = calendarEvents.filter(e => !e.error && dayKey(e.startMs) === todayKey);
+  if(!todays.length) return "sem compromissos hoje";
+  return todays.map(e => `${e.allDay?"dia todo":formatTime(e.startMs)} ${e.title}`).join(" · ");
+}
+
+/* ============ E-MAILS ============ */
+async function fetchAllEmailAccounts(){
+  const configured = emailAccounts.filter(a=>a.email && a.appPassword);
+  const resultsByAcc = {}; // accId -> itens dessa conta (e-mails ou 1 erro)
+
+  function rerender(){
+    const allEmails = configured.flatMap(acc => resultsByAcc[acc.id] || []);
+    renderEmailsPanel(allEmails);
+    updateEmailBadges();
+  }
+
+  // busca todas as contas em PARALELO — uma conta lenta/travada (ex: bloqueada
+  // pelo TI) não segura mais as outras, que aparecem assim que ficam prontas.
+  await Promise.allSettled(configured.map(async (acc) => {
+    try{
+      const res = await fetch(ANTENNA_BASE + "/emails", {
+        method:"POST", headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ host: acc.host, usuario: acc.email, senhaApp: acc.appPassword, quantidade: 200 })
+      });
+      const data = await res.json();
+      if(!res.ok || data.error){
+        resultsByAcc[acc.id] = [{ error:true, accId:acc.id, accName:acc.nickname, message: data.error || "erro ao conectar" }];
+      } else {
+        const items = (data.emails||[]).map(m => ({ ...m, accId:acc.id, accName:acc.nickname, accColor:acc.color }));
+        resultsByAcc[acc.id] = items;
+        await triageNewEmails(items); // tria só o que chegou dessa conta, sem esperar as outras
+      }
+    }catch(e){
+      resultsByAcc[acc.id] = [{ error:true, accId:acc.id, accName:acc.nickname, message:"antena offline ou inacessível" }];
+    }
+    rerender(); // atualiza a tela a cada conta que termina, não só no final de tudo
+  }));
+
+  return configured.flatMap(acc => resultsByAcc[acc.id] || []);
+}
+function heuristicTriage(e){
+  const s = normalize((e.subject||"") + " " + (e.from||""));
+  if(/noreply|newsletter|unsubscribe|promo|desinscrever|marketing/.test(s)) return { balde:"ruido", resumo:"provável promoção/newsletter (triagem local)" };
+  if(/pergunta|prazo|fatura|reuniao|por favor|urgente|confirma|responda/.test(s)) return { balde:"acao", resumo:"pode pedir ação (triagem local)" };
+  return { balde:"info", resumo:"triagem local" };
+}
+async function triageNewEmails(emails){
+  const untriaged = emails.filter(e => !emailTriageCache[e.id]);
+  if(!untriaged.length) return;
+  if(!anyProviderHasKey()){
+    untriaged.forEach(e => { emailTriageCache[e.id] = heuristicTriage(e); });
+    saveEmailTriageCache();
+    return;
+  }
+  try{
+    const compact = untriaged.slice(0,60).map(e => ({ id:e.id, de:e.from, assunto:e.subject, trecho:(e.excerpt||"").slice(0,200) }));
+    const result = await callLLM({
+      system: 'Você tria e-mails em 3 baldes: acao (pede resposta, tarefa, decisão ou tem prazo), info (vale saber mas não exige nada) e ruido (promoção, newsletter, notificação automática). Responda APENAS um array JSON, sem texto ao redor, no formato [{"id":"...","balde":"acao|info|ruido","resumo":"uma frase curta em português"}].',
+      messages: [{ role:"user", content: JSON.stringify(compact) }],
+      maxTokens: 1500,
+      activity: "triagem_email"
+    });
+    if(!result.ok) throw new Error(result.errorMsg);
+    const text = result.text || "[]";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const arr = JSON.parse(jsonMatch ? jsonMatch[0] : "[]");
+    arr.forEach(item => { emailTriageCache[item.id] = { balde:item.balde, resumo:item.resumo }; });
+    untriaged.forEach(e => { if(!emailTriageCache[e.id]) emailTriageCache[e.id] = heuristicTriage(e); });
+  }catch(e){
+    untriaged.forEach(e => { emailTriageCache[e.id] = heuristicTriage(e); });
+  }
+  saveEmailTriageCache();
+}
+function relativeTime(dateStr){
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime())) return "";
+  const diffMin = Math.round((Date.now()-d.getTime())/60000);
+  if(diffMin < 1) return "agora";
+  if(diffMin < 60) return `há ${diffMin} min`;
+  const diffH = Math.round(diffMin/60);
+  if(diffH < 24) return `há ${diffH} h`;
+  return `há ${Math.round(diffH/24)} d`;
+}
+function renderEmailRows_(list){
+  if(!list.length) return '<div style="color:var(--muted);font-size:0.8rem;">nada por aqui</div>';
+  return list.map(e => `
+    <div class="emailRow">
+      <div class="emailDot" style="background:${e.accColor||"#888"}"></div>
+      <div class="emailMain">
+        <div class="emailFrom">${escapeXml(e.from||"")}</div>
+        <div class="emailSummary">${escapeXml(e.subject||"")} — ${escapeXml(e.resumo||"")}</div>
+        <div class="emailExcerpt">${escapeXml((e.excerpt||"").slice(0,300))}</div>
+      </div>
+      <div class="emailTime">${relativeTime(e.date)}</div>
+    </div>`).join("");
+}
+let lastAllEmails = [];
+let emailsSelectedAccId = null; // null = "Todos"
+
+function renderEmailsAccountTabs(){
+  const wrap = document.getElementById("emailsAccountTabs");
+  if(!wrap) return;
+  const configured = emailAccounts.filter(a=>a.email && a.appPassword);
+  if(configured.length < 2){ wrap.innerHTML = ""; return; } // com só 1 conta, sub-abas não ajudam em nada
+  let html = `<button class="tabbtn ${emailsSelectedAccId===null?"active":""}" data-acc="">Todos</button>`;
+  configured.forEach(acc => {
+    const hasError = lastAllEmails.some(e => e.error && e.accId===acc.id);
+    html += `<button class="tabbtn ${emailsSelectedAccId===acc.id?"active":""}" data-acc="${acc.id}">
+      <span class="dot" style="background:${acc.color};display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;"></span>${escapeXml(acc.nickname)}${hasError?" ⚠":""}
+    </button>`;
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll("[data-acc]").forEach(btn => btn.addEventListener("click", () => {
+    emailsSelectedAccId = btn.dataset.acc || null;
+    renderEmailsAccountTabs();
+    renderEmailsPanel(lastAllEmails);
+  }));
+}
+
+function renderEmailsPanel(allEmails){
+  lastAllEmails = allEmails;
+  const el = document.getElementById("emailsContent");
+  if(!el) return;
+  if(antennaOnline === false){ el.innerHTML = offlineNoteHTML(); document.getElementById("emailsAccountTabs").innerHTML = ""; return; }
+  if(!emailAccounts.some(a=>a.email && a.appPassword)){ el.innerHTML = '<div class="offlineNote">Nenhuma conta de e-mail configurada. Clique em ⚙ pra adicionar.</div>'; document.getElementById("emailsAccountTabs").innerHTML = ""; return; }
+
+  renderEmailsAccountTabs();
+  const scoped = emailsSelectedAccId ? allEmails.filter(e => e.accId === emailsSelectedAccId) : allEmails;
+
+  const errors = scoped.filter(e=>e.error);
+  const valid = scoped.filter(e=>!e.error);
+  const buckets = { acao:[], info:[], ruido:[] };
+  valid.forEach(e => {
+    const t = emailTriageCache[e.id] || heuristicTriage(e);
+    (buckets[t.balde]||buckets.info).push({ ...e, resumo:t.resumo });
+  });
+  ["acao","info","ruido"].forEach(k => buckets[k].sort((a,b)=>new Date(b.date)-new Date(a.date)));
+  let html = "";
+  errors.forEach(e => { html += `<div class="offlineNote" style="margin-bottom:8px;">⚠ Conta "${escapeXml(e.accName)}": ${escapeXml(e.message)}.</div>`; });
+  html += `<div class="emailBucket action"><h3>⚡ AÇÃO (${buckets.acao.length})</h3>${renderEmailRows_(buckets.acao)}</div>`;
+  html += `<div class="emailBucket"><h3>INFO (${buckets.info.length})</h3>${renderEmailRows_(buckets.info)}</div>`;
+  html += `<details class="ruidoBox"><summary>RUÍDO (${buckets.ruido.length})</summary>${renderEmailRows_(buckets.ruido)}</details>`;
+  el.innerHTML = html;
+  el.querySelectorAll(".emailRow").forEach(row => row.addEventListener("click", () => row.classList.toggle("open")));
+}
+function actionEmailCount(){
+  let count = 0;
+  Object.keys(emailTriageCache).forEach(id => { if(emailTriageCache[id].balde==="acao") count++; });
+  return count;
+}
+function updateEmailBadges(){
+  const n = actionEmailCount();
+  [document.getElementById("actionEmailBadge"), document.getElementById("emailTabBadge")].forEach(b => {
+    if(!b) return;
+    b.textContent = n;
+    b.classList.toggle("hidden", n===0);
+  });
+}
+
+/* ============ NOTÍCIAS ============ */
+async function fetchNewsForTopic(topic, force){
+  const cached = newsCache[topic];
+  if(!force && cached && (Date.now()-cached.ts) < 55*1000) return cached.items;
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  try{
+    const xmlText = await proxyFetchText(url);
+    const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+    const items = Array.from(doc.querySelectorAll("item")).slice(0,5).map(it => ({
+      title: (it.querySelector("title")?.textContent || "").replace(/\s-\s[^-]+$/,""),
+      link: it.querySelector("link")?.textContent || "",
+      source: it.querySelector("source")?.textContent || "",
+      pubDate: it.querySelector("pubDate")?.textContent || ""
+    }));
+    newsCache[topic] = { items, ts: Date.now() };
+    saveNewsCache();
+    return items;
+  }catch(e){ return cached ? cached.items : []; }
+}
+async function fetchAllNews(force){
+  const sub = document.getElementById("newsSub");
+  if(sub) sub.textContent = newsTopics.join(" · ");
+  const content = document.getElementById("newsContent");
+  if(!content) return;
+  if(antennaOnline === false){ content.innerHTML = offlineNoteHTML(); return; }
+  if(!newsTopics.length){ content.innerHTML = '<div class="offlineNote">Nenhum assunto configurado.</div>'; return; }
+  let html = "";
+  for(const topic of newsTopics){
+    const items = await fetchNewsForTopic(topic, force);
+    html += `<div class="newsTopic"><h3>${escapeXml(topic)}</h3>` +
+      (items.length ? items.map(it => `<a class="newsItem" href="${escapeAttr(it.link)}" target="_blank" rel="noopener">${escapeXml(it.title)}<div class="newsSource">${escapeXml(it.source)} · ${relativeTime(it.pubDate)}</div></a>`).join("") :
+        '<div style="color:var(--muted);font-size:0.8rem;">sem manchetes agora</div>') + `</div>`;
+  }
+  content.innerHTML = html;
+}
+
+/* ============ CLIMA (Open-Meteo, direto do navegador) ============ */
+async function geocodeCity(city){
+  if(weatherGeoCache[city]) return weatherGeoCache[city];
+  try{
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=pt&format=json`);
+    const data = await res.json();
+    const r = data.results && data.results[0];
+    if(!r) return null;
+    const geo = { lat:r.latitude, lon:r.longitude };
+    weatherGeoCache[city] = geo;
+    saveJSON("jarvis_weather_geo", weatherGeoCache);
+    return geo;
+  }catch(e){ return null; }
+}
+async function fetchWeather(city){
+  const geo = await geocodeCity(city);
+  if(!geo) return null;
+  try{
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code&timezone=auto`);
+    const data = await res.json();
+    return data.current ? { temp: Math.round(data.current.temperature_2m), code: data.current.weather_code } : null;
+  }catch(e){ return null; }
+}
+function weatherCodeLabel(code){
+  if(code===0) return "céu limpo";
+  if([1,2,3].includes(code)) return "parcialmente nublado";
+  if([45,48].includes(code)) return "neblina";
+  if([51,53,55,56,57].includes(code)) return "garoa";
+  if([61,63,65,66,67,80,81,82].includes(code)) return "chuva";
+  if([71,73,75,77,85,86].includes(code)) return "neve";
+  if([95,96,99].includes(code)) return "tempestade";
+  return "tempo instável";
+}
+
+/* ============ MORNING DIGEST ============ */
+function buildOfflineDigest(dateLabel, weatherText, todaysEvents, actionSummaries, newsHeadlines, goalNotes){
+  let t = `Bom dia, ${CONFIG.address}. Hoje é ${dateLabel}. `;
+  if(weatherText) t += `Tempo: ${weatherText}. `;
+  t += todaysEvents.length ? `Sua agenda: ${todaysEvents.map(e=>`${e.allDay?"dia todo":formatTime(e.startMs)} ${e.title}`).join(", ")}. ` : "Sua agenda de hoje está livre. ";
+  t += actionSummaries.length ? `E-mails pedindo ação: ${actionSummaries.join("; ")}. ` : "Nenhum e-mail pedindo ação. ";
+  const headlineList = Object.entries(newsHeadlines).filter(([,v])=>v.length).map(([k,v])=>`${k}: ${v[0]}`).join(" · ");
+  if(headlineList) t += `Manchetes: ${headlineList}. `;
+  if(goalNotes.length) t += `Foco do dia: ${goalNotes[0]}.`;
+  return t;
+}
+async function buildAndShowDigest(speakToo){
+  const card = document.getElementById("digestCard");
+  card.textContent = "Montando seu briefing…";
+  switchTab("digest");
+
+  const dateLabel = new Intl.DateTimeFormat("pt-BR", { timeZone:DISPLAY_TZ, weekday:"long", day:"2-digit", month:"long" }).format(new Date());
+  const todayKey = dayKey(Date.now());
+  const todaysEvents = calendarEvents.filter(e=>!e.error && dayKey(e.startMs)===todayKey);
+  const actionSummaries = Object.keys(emailTriageCache).filter(id=>emailTriageCache[id].balde==="acao").slice(0,5).map(id=>emailTriageCache[id].resumo);
+  const totalAcao = actionEmailCount();
+
+  let weatherText = "";
+  if(digestSettings.weather){
+    const wPrimary = await fetchWeather(digestSettings.citiesPrimary);
+    const wSecondary = digestSettings.citySecondary ? await fetchWeather(digestSettings.citySecondary) : null;
+    if(wPrimary){
+      weatherText = `${digestSettings.citiesPrimary}: ${wPrimary.temp}°C, ${weatherCodeLabel(wPrimary.code)}`;
+      if(wSecondary && Math.abs(wSecondary.temp - wPrimary.temp) >= 3){
+        weatherText += ` · ${digestSettings.citySecondary}: ${wSecondary.temp}°C, ${weatherCodeLabel(wSecondary.code)}`;
+      }
+    }
+  }
+  const newsHeadlines = {};
+  newsTopics.forEach(topic => { newsHeadlines[topic] = (newsCache[topic]?.items || []).slice(0,3).map(i=>i.title); });
+  const goalNotes = notes.filter(n=>n.area==="metas").slice(0,2).map(n=>`${n.title}: ${n.body}`);
+
+  let digestText = null;
+  if(anyProviderHasKey()){
+    try{
+      const packet = { data:dateLabel, clima: weatherText || "sem dado de clima",
+        agenda_hoje: todaysEvents.map(e => `${e.allDay?"dia todo":formatTime(e.startMs)} ${e.title}`),
+        emails_acao: actionSummaries, total_emails_acao: totalAcao, manchetes: newsHeadlines, metas: goalNotes };
+      const result = await callLLM({
+        system: `Você é ${CONFIG.name}, assistente de ${CONFIG.address}. Personalidade: ${CONFIG.persona}. Monte um Morning Digest corrido e falável em português do Brasil, natural, ${digestSettings.length==="medio"?"cerca de 1 minuto falado":"cerca de 30 segundos falado"}, cumprimentando ${CONFIG.address}, cobrindo clima (se houver), agenda de hoje, e-mails que pedem ação, principais manchetes, terminando com uma frase de foco do dia conectada às metas. Sem emojis, sem markdown.`,
+        messages: [{ role:"user", content: JSON.stringify(packet) }],
+        maxTokens: digestSettings.length==="medio" ? 800 : 500,
+        activity: "digest"
+      });
+      if(result.ok) digestText = result.text;
+    }catch(e){ digestText = null; }
+  }
+  if(!digestText) digestText = buildOfflineDigest(dateLabel, weatherText, todaysEvents, actionSummaries, newsHeadlines, goalNotes);
+
+  card.textContent = digestText;
+  localStorage.setItem("jarvis_last_digest", todayKey);
+  if(speakToo && digestSettings.speak) speak(digestText);
+}
+
+/* ============ ROTEADOR — comandos locais primeiro, senão cai na Parte 1 ============ */
+function routeUserText(text){
+  const n = normalize(text);
+
+  if(/minha agenda|o que eu tenho hoje|compromissos de hoje/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    switchTab("agenda");
+    const todayKey = dayKey(Date.now());
+    const todays = calendarEvents.filter(e=>!e.error && dayKey(e.startMs)===todayKey);
+    const msg = todays.length ? `Sua agenda de hoje: ${todays.map(e=>`${e.allDay?"dia todo":formatTime(e.startMs)} ${e.title}`).join(", ")}.` : "Você não tem nada marcado hoje.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  if(/proximo compromisso|proxima reuniao/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    const now = Date.now();
+    const next = calendarEvents.find(e=>!e.error && !e.allDay && e.startMs>now);
+    const msg = next ? `Seu próximo compromisso é ${next.title}, ${countdownLabel(next.startMs-now)}.` : "Você não tem mais nada marcado nos próximos dias.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  if(/agenda da semana|proximos dias/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    switchTab("agenda");
+    const groups = groupEventsByDay(calendarEvents.filter(e=>!e.error));
+    const msg = groups.length ? groups.slice(0,4).map(g=>`${g.label}: ${g.events.length} evento(s)`).join(". ") : "Sua semana está livre.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  if(/meus e ?mails/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    switchTab("emails");
+    const acao = actionEmailCount();
+    const resumos = Object.keys(emailTriageCache).filter(id=>emailTriageCache[id].balde==="acao").slice(0,3).map(id=>emailTriageCache[id].resumo);
+    const msg = acao ? `Você tem ${acao} e-mail(s) pedindo ação: ${resumos.join("; ")}.` : "Nenhum e-mail pedindo ação agora.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  if(/tem email importante|e ?mail importante/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    const acao = actionEmailCount();
+    const msg = acao ? `Sim, ${acao} e-mail(s) pedindo ação.` : "Não, nenhum e-mail importante agora.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  const newsTopicMatch = n.match(/noticias? de (.+)/);
+  if(newsTopicMatch){
+    document.getElementById("youLine").textContent = text;
+    switchTab("news");
+    const topic = newsTopicMatch[1].trim();
+    fetchNewsForTopic(topic).then(items => {
+      const msg = items.length ? `Manchetes de ${topic}: ${items.slice(0,3).map(i=>i.title).join(". ")}.` : `Não achei manchetes de ${topic} agora.`;
+      setJarvisLine(msg); speak(msg, endTurn);
+    });
+    return;
+  }
+  if(/^noticias$|noticias principais/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    switchTab("news");
+    const all = newsTopics.map(t => (newsCache[t]?.items||[])[0]).filter(Boolean);
+    const msg = all.length ? `Principais manchetes: ${all.map(i=>i.title).join(". ")}.` : "Ainda não tenho manchetes carregadas.";
+    setJarvisLine(msg); speak(msg, endTurn); return;
+  }
+  if(/^bom dia\b/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    buildAndShowDigest(true);
+    return;
+  }
+  if(/atualizar e ?mails?/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    const msg = "Atualizando seus e-mails.";
+    setJarvisLine(msg); speak(msg, endTurn);
+    fetchAllEmailAccounts();
+    return;
+  }
+  if(/atualizar noticias/.test(n)){
+    document.getElementById("youLine").textContent = text;
+    const msg = "Atualizando as notícias.";
+    setJarvisLine(msg); speak(msg, endTurn);
+    fetchAllNews(true);
+    return;
+  }
+
+  submitUserText(text);
+}
+
+/* ============ ENVELOPE DO SYSTEM PROMPT ============ */
+function buildSystemPromptFull(){
+  let base = buildSystemPrompt();
+  base += `\n\nMÓDULOS ATIVOS: você também tem Agenda (Google/Outlook/Titan), Central de E-mails (triagem AÇÃO/INFO/RUÍDO), Radar de Notícias e Morning Digest. Se ${CONFIG.address} perguntar o que você sabe fazer, cite: "minha agenda", "próximo compromisso", "agenda da semana", "meus e-mails", "tem e-mail importante?", "notícias", "notícias de {assunto}", "bom dia" (dispara o digest), "atualizar e-mails" e "atualizar notícias".\n`;
+  base += `Agenda de hoje: ${todayEventsCompactText()}\n`;
+  base += `E-mails pedindo ação: ${actionEmailCount()}\n`;
+  return base;
+}
+
+/* ============ CONFIGURAÇÕES (⚙) ============ */
+function renderCalRows(){
+  const wrap = document.getElementById("calRows");
+  wrap.innerHTML = "";
+  calendars.forEach(cal => {
+    const row = document.createElement("div");
+    row.className = "entryRow";
+    row.innerHTML = `
+      <input type="text" data-f="name" placeholder="nome" value="${escapeAttr(cal.name)}">
+      <input type="text" data-f="url" placeholder="link ICS/iCal secreto" value="${escapeAttr(cal.url)}">
+      <input type="color" data-f="color" value="${cal.color}">
+      <span></span>
+      <button class="rmBtn" title="Remover">✕</button>`;
+    row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => { cal[inp.dataset.f] = inp.value; saveCalendars(); }));
+    row.querySelector(".rmBtn").addEventListener("click", () => { calendars = calendars.filter(c => c.id !== cal.id); saveCalendars(); renderCalRows(); });
+    wrap.appendChild(row);
+  });
+}
+document.getElementById("addCalBtn").addEventListener("click", () => {
+  calendars.push({ id:"cal_"+Date.now(), name:"Nova agenda", color: CONFIG.themeColor, url:"", provider:"outro" });
+  saveCalendars(); renderCalRows();
+});
+
+function renderEmailRows(){
+  const wrap = document.getElementById("emailRows");
+  wrap.innerHTML = "";
+  emailAccounts.forEach(acc => {
+    const row = document.createElement("div");
+    row.className = "entryRow";
+    row.innerHTML = `
+      <input type="text" data-f="nickname" placeholder="apelido" value="${escapeAttr(acc.nickname)}">
+      <input type="email" data-f="email" placeholder="e-mail" value="${escapeAttr(acc.email)}">
+      <select data-f="provider">
+        <option value="gmail">Gmail</option>
+        <option value="titan">Titan/HostGator</option>
+        <option value="outlook">Outlook/365</option>
+        <option value="outro">Outro (IMAP)</option>
+      </select>
+      <input type="color" data-f="color" value="${acc.color}">
+      <button class="rmBtn" title="Remover">✕</button>`;
+    row.querySelector('[data-f="provider"]').value = acc.provider;
+    // texto: salva a cada tecla (não dá pra confiar em "change"/perder foco pra salvar)
+    row.querySelectorAll('input[type="text"], input[type="email"]').forEach(inp => {
+      inp.addEventListener("input", () => { acc[inp.dataset.f] = inp.value; saveEmailAccounts(); });
+    });
+    // select/cor: "change" é o evento certo aqui (dispara na escolha, não em cada tecla)
+    row.querySelectorAll("select, input[type=color]").forEach(inp => {
+      inp.addEventListener("change", () => {
+        acc[inp.dataset.f] = inp.value;
+        // gmail e outlook têm host fixo; titan varia por conta (ex: imap0101.titan.email) — não sobrescreve
+        if(inp.dataset.f === "provider" && (acc.provider === "gmail" || acc.provider === "outlook")) acc.host = HOST_BY_PROVIDER[acc.provider];
+        saveEmailAccounts();
+        if(inp.dataset.f === "provider") renderEmailRows();
+      });
+    });
+    row.querySelector(".rmBtn").addEventListener("click", () => { emailAccounts = emailAccounts.filter(a => a.id !== acc.id); saveEmailAccounts(); renderEmailRows(); });
+    wrap.appendChild(row);
+
+    const hostPlaceholder = acc.provider === "titan" ? "servidor IMAP (ex: imap0101.titan.email — veja em 'configurar cliente de e-mail' no seu painel)" : "host IMAP (ex: imap.provedor.com)";
+    const row2 = document.createElement("div");
+    row2.className = "entryRow";
+    row2.style.gridTemplateColumns = "1fr 1fr auto";
+    row2.innerHTML = `<input type="password" data-f="appPassword" placeholder="senha de app / senha da caixa" value="${escapeAttr(acc.appPassword)}">
+       <input type="text" data-f="host" placeholder="${hostPlaceholder}" value="${escapeAttr(acc.host||"")}">
+       <span></span>`;
+    row2.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => { acc[inp.dataset.f] = inp.value; saveEmailAccounts(); }));
+    wrap.appendChild(row2);
+  });
+}
+document.getElementById("addEmailBtn").addEventListener("click", () => {
+  emailAccounts.push({ id:"em_"+Date.now(), nickname:"Nova conta", email:"", appPassword:"", color: CONFIG.themeColor, provider:"gmail", host:HOST_BY_PROVIDER.gmail });
+  saveEmailAccounts(); renderEmailRows();
+});
+
+function renderTopicRows(){
+  const wrap = document.getElementById("newsRows");
+  wrap.innerHTML = "";
+  newsTopics.forEach((topic,i) => {
+    const chip = document.createElement("span");
+    chip.className = "tabbtn"; chip.style.cursor = "default"; chip.style.marginRight="6px"; chip.style.marginBottom="6px"; chip.style.display="inline-flex";
+    chip.innerHTML = `${escapeXml(topic)} <button class="rmBtn" style="width:20px;height:20px;font-size:0.6rem;margin-left:6px;padding:0;">✕</button>`;
+    chip.querySelector("button").addEventListener("click", () => { newsTopics = newsTopics.filter((t,idx)=>idx!==i); saveNewsTopics(); renderTopicRows(); });
+    wrap.appendChild(chip);
+  });
+}
+document.getElementById("addTopicBtn").addEventListener("click", () => {
+  const inp = document.getElementById("newTopicInput");
+  const v = inp.value.trim();
+  if(v){ newsTopics.push(v); saveNewsTopics(); inp.value=""; renderTopicRows(); }
+});
+
+function renderProviderChoices(){
+  const wrap = document.getElementById("providerChoices");
+  if(!wrap) return;
+  const providersMap = allProviders();
+  wrap.innerHTML = Object.keys(providersMap).map(id => `
+    <div class="modelChoice ${id===selectedProvider?"active":""}" data-provider="${id}">
+      <b>${escapeXml(providersMap[id].label)}</b>${providerHasKey(id, providersMap) ? ' <span style="color:var(--green)">●</span>' : ''}
+    </div>`).join("");
+  wrap.querySelectorAll("[data-provider]").forEach(el => {
+    el.addEventListener("click", () => {
+      selectedProvider = el.dataset.provider;
+      localStorage.setItem("jarvis_provider", selectedProvider);
+      renderProviderChoices();
+      renderModelTierChoices();
+      renderProviderKeyField();
+    });
+  });
+}
+function renderModelTierChoices(){
+  const wrap = document.getElementById("modelTierChoices");
+  if(!wrap) return;
+  const models = allProviders()[selectedProvider].models;
+  wrap.innerHTML = Object.keys(TIER_LABELS).map(tier => `
+    <div class="modelChoice ${tier===modelTier?"active":""}" data-tier="${tier}">
+      <b>${TIER_LABELS[tier]}</b><br>${escapeXml(models[tier])}
+    </div>`).join("");
+  wrap.querySelectorAll("[data-tier]").forEach(el => {
+    el.addEventListener("click", () => {
+      modelTier = el.dataset.tier;
+      localStorage.setItem("jarvis_model_level", modelTier);
+      renderModelTierChoices();
+    });
+  });
+}
+function renderProviderKeyField(){
+  const p = allProviders()[selectedProvider];
+  document.getElementById("providerKeyLabel").textContent = "Chave — " + p.label;
+  document.getElementById("providerKeyHint").textContent = p.keyHelp;
+  const input = document.getElementById("providerKeyInput");
+  input.value = localStorage.getItem(p.keyKey) || "";
+  input.oninput = () => { localStorage.setItem(p.keyKey, input.value.trim()); renderProviderChoices(); };
+}
+
+function renderCustomProviderRows(){
+  const wrap = document.getElementById("customProviderRows");
+  if(!wrap) return;
+  if(!customProviders.length){ wrap.innerHTML = ""; return; }
+  wrap.innerHTML = customProviders.map(cp => `
+    <div class="entryRow" style="grid-template-columns:1fr 1.4fr 1fr auto;" data-cp="${cp.id}">
+      <input type="text" data-f="label" value="${escapeAttr(cp.label)}">
+      <input type="text" data-f="baseUrl" value="${escapeAttr(cp.baseUrl)}">
+      <input type="text" data-f="model" value="${escapeAttr(cp.model)}">
+      <button class="rmBtn" title="Remover">✕</button>
+    </div>`).join("");
+  wrap.querySelectorAll("[data-cp]").forEach(row => {
+    const cp = customProviders.find(c => c.id === row.dataset.cp);
+    row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => {
+      cp[inp.dataset.f] = inp.value;
+      saveCustomProviders();
+      if(inp.dataset.f === "label") renderProviderChoices();
+    }));
+    row.querySelector(".rmBtn").addEventListener("click", () => {
+      customProviders = customProviders.filter(c => c.id !== cp.id);
+      saveCustomProviders();
+      if(selectedProvider === cp.id) selectedProvider = "anthropic";
+      renderCustomProviderRows(); renderProviderChoices(); renderModelTierChoices(); renderProviderKeyField();
+    });
+  });
+}
+document.getElementById("addCustomProviderBtn").addEventListener("click", () => {
+  const label = document.getElementById("cp-label").value.trim();
+  const baseUrl = document.getElementById("cp-url").value.trim();
+  const model = document.getElementById("cp-model").value.trim();
+  if(!label || !baseUrl || !model){ showError("Preenche nome, URL e modelo pra adicionar o provedor."); return; }
+  const id = "custom_" + Date.now();
+  customProviders.push({ id, label, baseUrl, model, keyKey: "custom_key_" + id });
+  saveCustomProviders();
+  document.getElementById("cp-label").value = "";
+  document.getElementById("cp-url").value = "";
+  document.getElementById("cp-model").value = "";
+  renderCustomProviderRows(); renderProviderChoices(); renderModelTierChoices();
+});
+
+document.getElementById("gearBtn").addEventListener("click", () => {
+  pingAntenna();
+  renderCalRows(); renderEmailRows(); renderTopicRows();
+  renderProviderChoices(); renderModelTierChoices(); renderProviderKeyField(); renderCustomProviderRows();
+  document.getElementById("digestWeatherToggle").checked = digestSettings.weather;
+  document.getElementById("digestSpeakToggle").checked = digestSettings.speak;
+  document.getElementById("digestAutoToggle").checked = digestSettings.triggerAuto;
+  document.getElementById("economyToggle").checked = economyMode;
+  document.getElementById("autoModeToggle").checked = autoMode;
+  document.getElementById("settingsOverlay").classList.remove("hidden");
+});
+document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+  document.getElementById("settingsOverlay").classList.add("hidden");
+});
+document.getElementById("digestWeatherToggle").addEventListener("change", e => { digestSettings.weather=e.target.checked; saveDigestSettings(); });
+document.getElementById("digestSpeakToggle").addEventListener("change", e => { digestSettings.speak=e.target.checked; saveDigestSettings(); });
+document.getElementById("digestAutoToggle").addEventListener("change", e => { digestSettings.triggerAuto=e.target.checked; saveDigestSettings(); });
+document.getElementById("economyToggle").addEventListener("change", e => { economyMode=e.target.checked; localStorage.setItem("jarvis_economy_mode", economyMode?"1":"0"); });
+document.getElementById("autoModeToggle").addEventListener("change", e => { autoMode=e.target.checked; localStorage.setItem("jarvis_auto_mode", autoMode?"1":"0"); });
+
+/* ============ PAINEL DE AGENTES (constelação) ============
+   A animação é o dado: arco = fração do ciclo (age_min/every_min) calculado
+   ao vivo entre um fetch e outro; pulso viajando = agente saudável emitindo;
+   piscar vermelho = erro; cor sempre vem do estado, nunca de gosto. */
+const AGENTS_W = 760, AGENTS_H = 460, AGENTS_CX = AGENTS_W/2, AGENTS_CY = AGENTS_H/2;
+const AGENT_RING_R = 44;
+const AGENT_RING_CIRC = 2 * Math.PI * AGENT_RING_R;
+const AGENT_STATE_LABEL = { ok:"em dia", stale:"atrasado", error:"erro", idle:"nunca rodou", off:"desligado" };
+
+let agentsData = [];
+let agentsFetchedAtPerf = 0;
+let agentsSelectedId = null;
+let agentsPanelActive = false;
+let agentsRafId = null;
+let agentsPulses = [];
+let agentsLastPulseSpawn = {};
+let agentPositions = {};
+
+function agentStateColorVar(state){
+  return { ok:"var(--green)", stale:"var(--yellow)", error:"var(--red)", idle:"var(--txt3)", off:"var(--txt3)" }[state] || "var(--txt3)";
+}
+function formatRelative(iso){
+  if(!iso) return "nunca";
+  const min = (Date.now() - new Date(iso).getTime()) / 60000;
+  if(min < 1) return "agora mesmo";
+  if(min < 60) return "há " + Math.round(min) + " min";
+  const h = min/60;
+  if(h < 24) return "há " + (h<10 ? h.toFixed(1) : Math.round(h)) + " h";
+  return "há " + Math.round(h/24) + " d";
+}
+function formatIn(min){
+  if(min == null) return "—";
+  if(min <= 0) return "a qualquer momento";
+  if(min < 60) return "em " + Math.round(min) + " min";
+  return "em " + (min/60).toFixed(1) + " h";
+}
+function hexPoints(cx, cy, r){
+  const pts = [];
+  for(let i=0;i<6;i++){
+    const a = Math.PI/180 * (60*i - 30);
+    pts.push((cx + r*Math.cos(a)).toFixed(1) + "," + (cy + r*Math.sin(a)).toFixed(1));
+  }
+  return pts.join(" ");
+}
+
+async function fetchAgents(){
+  try{
+    const res = await fetch(ANTENNA_BASE + "/api/agents");
+    if(!res.ok) throw new Error("http_"+res.status);
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error("resposta invalida");
+    agentsData = data.agents || [];
+    agentsFetchedAtPerf = performance.now();
+  }catch(e){
+    agentsData = [];
+  }
+  renderAgentsConstellation();
+}
+
+function renderAgentsConstellation(){
+  const wrap = document.getElementById("agentsContent");
+  if(!wrap) return;
+
+  if(!agentsData.length){
+    wrap.innerHTML = '<div class="offlineNote">ANTENA OFFLINE (ou nenhum agente respondeu) — rode <code>node server.js</code> pra ver o painel de agentes aqui.</div>';
+    return;
+  }
+
+  const n = agentsData.length;
+  const rx = 300, ry = 165;
+  agentPositions = {};
+  agentsData.forEach((a,i) => {
+    const angle = (i/n) * Math.PI*2 - Math.PI/2;
+    agentPositions[a.id] = { x: AGENTS_CX + rx*Math.cos(angle), y: AGENTS_CY + ry*Math.sin(angle) };
+  });
+
+  let spokes = "", hexes = "";
+  agentsData.forEach(a => {
+    const p = agentPositions[a.id];
+    spokes += `<line x1="${AGENTS_CX}" y1="${AGENTS_CY}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="${agentStateColorVar(a.state)}" stroke-width="0.6" opacity="0.16"/>`;
+  });
+  agentsData.forEach(a => {
+    const p = agentPositions[a.id];
+    const color = agentStateColorVar(a.state);
+    const hexR = 28;
+    const errClass = a.state === "error" ? "agent-error-pulse" : "";
+    const breatheClass = (a.state === "ok" || a.state === "stale") ? "agent-breathe" : "";
+    const hasArc = a.phase !== null && a.phase !== undefined;
+    const arcHtml = hasArc
+      ? `<circle r="${AGENT_RING_R}" fill="none" stroke="${color}" stroke-width="2" opacity="0.15"/>
+         <circle id="ring-${a.id}" r="${AGENT_RING_R}" fill="none" stroke="${color}" stroke-width="2.4"
+           stroke-dasharray="${AGENT_RING_CIRC.toFixed(1)}" stroke-dashoffset="${AGENT_RING_CIRC.toFixed(1)}"
+           transform="rotate(-90)" stroke-linecap="round"/>`
+      : `<circle r="${AGENT_RING_R}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.18"/>`;
+    hexes += `
+      <g class="agent-hex ${errClass}" data-id="${a.id}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})">
+        ${arcHtml}
+        <polygon class="${breatheClass}" points="${hexPoints(0,0,hexR)}" style="fill:${color}" opacity="0.88"/>
+        <text y="6" text-anchor="middle" font-size="18">${escapeXml(a.icon||"⚙")}</text>
+        <text y="${hexR+18}" text-anchor="middle" font-size="11" style="fill:var(--txt)" font-weight="600">${escapeXml(a.nome)}</text>
+        <text y="${hexR+32}" text-anchor="middle" font-size="9" style="fill:var(--txt3)">${escapeXml(AGENT_STATE_LABEL[a.state]||a.state)}</text>
+        <title>${escapeXml(a.nome)} — ${escapeXml(AGENT_STATE_LABEL[a.state]||a.state)} — ${escapeXml(a.faz)} — última: ${escapeXml(formatRelative(a.last))} · próxima: ${escapeXml(formatIn(a.next_in_min))}</title>
+      </g>`;
+  });
+
+  const coreHtml = `<g transform="translate(${AGENTS_CX},${AGENTS_CY})">
+      <polygon class="agents-core-breathe" points="${hexPoints(0,0,24)}" style="fill:var(--primary)" opacity="0.9"/>
+      <circle id="agentsCoreFlash" r="32" fill="none" stroke="var(--accent)" stroke-width="2" opacity="0"/>
+      <text y="6" text-anchor="middle" font-size="18">🛰</text>
+    </g>`;
+
+  const style = `<style>
+    @keyframes agentBreathe{ 0%,100%{opacity:.75;} 50%{opacity:1;} }
+    .agent-breathe{ animation: agentBreathe 3.4s ease-in-out infinite; transform-origin:center; }
+    @keyframes agentErrorPulse{ 0%,100%{opacity:.65; transform:scale(1);} 50%{opacity:1; transform:scale(1.14);} }
+    .agent-error-pulse polygon{ animation: agentErrorPulse 1s ease-in-out infinite; transform-origin:center; }
+    @keyframes coreBreatheAgents{ 0%,100%{opacity:.78; transform:scale(.95);} 50%{opacity:1; transform:scale(1.06);} }
+    .agents-core-breathe{ animation: coreBreatheAgents 4s ease-in-out infinite; transform-origin:center; }
+  </style>`;
+
+  wrap.innerHTML = `<div class="agents-layout">
+    <div class="agents-svg-wrap"><svg viewBox="0 0 ${AGENTS_W} ${AGENTS_H}" xmlns="http://www.w3.org/2000/svg">${style}${spokes}${hexes}${coreHtml}<g id="agentsPulseLayer"></g></svg></div>
+    <div class="agents-side">
+      <div class="agents-summary" id="agentsSummary"></div>
+      <div class="agents-detail" id="agentsDetail"><div class="empty">clique num agente pra ver detalhes</div></div>
+      <div class="agents-list" id="agentsList"></div>
+    </div>
+  </div>`;
+
+  wrap.querySelectorAll(".agent-hex").forEach(g => g.addEventListener("click", () => selectAgent(g.getAttribute("data-id"))));
+
+  renderAgentsSummary();
+  renderAgentsList();
+  renderAgentsDetail();
+}
+
+function renderAgentsSummary(){
+  const el = document.getElementById("agentsSummary");
+  if(!el) return;
+  const ok = agentsData.filter(a=>a.state==="ok").length;
+  const atencao = agentsData.filter(a=>a.state==="stale"||a.state==="error").length;
+  const off = agentsData.filter(a=>a.state==="off"||a.state==="idle").length;
+  el.innerHTML = `<span class="chip"><b style="color:var(--green)">${ok}</b>em dia</span><span class="chip"><b style="color:var(--yellow)">${atencao}</b>pedem atenção</span><span class="chip"><b>${off}</b>desligados</span>`;
+}
+
+function renderAgentsList(){
+  const el = document.getElementById("agentsList");
+  if(!el) return;
+  el.innerHTML = agentsData.map(a => `
+    <div class="item ${a.id===agentsSelectedId?"selected":""}" data-id="${a.id}">
+      <span class="dot" style="background:${agentStateColorVar(a.state)}"></span>
+      <span>${escapeXml(a.icon||"")} ${escapeXml(a.nome)}</span>
+      <span class="state-label">${escapeXml(AGENT_STATE_LABEL[a.state]||a.state)}</span>
+    </div>`).join("");
+  el.querySelectorAll(".item").forEach(it => it.addEventListener("click", () => selectAgent(it.getAttribute("data-id"))));
+}
+
+function selectAgent(id){
+  agentsSelectedId = (agentsSelectedId === id) ? null : id;
+  renderAgentsList();
+  renderAgentsDetail();
+  document.querySelectorAll(".agent-hex").forEach(g => {
+    g.style.filter = (g.getAttribute("data-id") === agentsSelectedId) ? "drop-shadow(0 0 10px var(--primary))" : "";
+  });
+}
+
+function renderAgentsDetail(){
+  const el = document.getElementById("agentsDetail");
+  if(!el) return;
+  const a = agentsData.find(x => x.id === agentsSelectedId);
+  if(!a){ el.innerHTML = '<div class="empty">clique num agente pra ver detalhes</div>'; return; }
+  el.innerHTML = `
+    <h3>${escapeXml(a.icon||"")} ${escapeXml(a.nome)}</h3>
+    <div class="row"><span>estado</span><span style="color:${agentStateColorVar(a.state)}">${escapeXml(AGENT_STATE_LABEL[a.state]||a.state)}</span></div>
+    <div class="row"><span>faz</span><span>${escapeXml(a.faz)}</span></div>
+    <div class="row"><span>cadência</span><span>${a.every_min ? ("a cada "+a.every_min+" min") : "contínuo"}</span></div>
+    <div class="row"><span title="${escapeXml(a.last||"")}">última rodada</span><span>${escapeXml(formatRelative(a.last))}</span></div>
+    <div class="row"><span>próxima</span><span>${escapeXml(formatIn(a.next_in_min))}</span></div>
+    <div class="row"><span>resultado</span><span>${escapeXml(a.metric||"—")}</span></div>
+    <div class="row"><span>nota</span><span>${escapeXml(a.detail||"—")}</span></div>
+    <div class="row"><span>estado mora em</span><span>${escapeXml(a.arquivo||"—")}</span></div>
+    ${a.run ? `<button class="btn primary runBtn" id="agentRunBtn">▶ rodar agora</button>` : ""}
+  `;
+  const btn = document.getElementById("agentRunBtn");
+  if(btn) btn.addEventListener("click", () => runAgentNow(a));
+}
+
+async function runAgentNow(a){
+  const btn = document.getElementById("agentRunBtn");
+  if(btn){ btn.disabled = true; btn.textContent = "rodando…"; }
+  try{
+    const res = await fetch(ANTENNA_BASE + a.run.url, { method: a.run.method || "POST" });
+    const data = await res.json();
+    if(!data.ok){
+      if(btn){ btn.disabled = false; btn.textContent = "❌ falhou — tentar de novo"; }
+      return;
+    }
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = "❌ antena offline"; }
+    return;
+  }
+  await fetchAgents();
+}
+
+function flashAgentsCore(){
+  const core = document.getElementById("agentsCoreFlash");
+  if(!core) return;
+  core.style.transition = "none";
+  core.style.opacity = "1";
+  requestAnimationFrame(() => {
+    core.style.transition = "opacity .5s ease";
+    core.style.opacity = "0";
+  });
+}
+
+function agentsTick(){
+  if(!agentsPanelActive || document.hidden){ agentsRafId = null; return; }
+  const deltaMin = (performance.now() - agentsFetchedAtPerf) / 60000;
+
+  agentsData.forEach(a => {
+    if(a.age_min == null) return; // off/idle — sem ciclo pra animar
+    const liveAge = a.age_min + deltaMin;
+    const livePhase = Math.min(1, liveAge / a.every_min);
+    const ring = document.getElementById("ring-"+a.id);
+    if(ring){
+      const dashoffset = AGENT_RING_CIRC * (1 - livePhase);
+      ring.setAttribute("stroke-dashoffset", dashoffset.toFixed(1));
+      ring.style.opacity = livePhase > 0.92 ? String(0.55 + 0.45*Math.sin(performance.now()/150)) : "1";
+    }
+    if(a.state === "ok"){
+      const freq = Math.max(2500, Math.min(9000, a.every_min * 400));
+      if(!agentsLastPulseSpawn[a.id] || performance.now() - agentsLastPulseSpawn[a.id] > freq){
+        agentsLastPulseSpawn[a.id] = performance.now();
+        agentsPulses.push({ id: a.id, t: 0, speed: 0.012 + Math.random()*0.006 });
+      }
+    }
+  });
+
+  const layer = document.getElementById("agentsPulseLayer");
+  if(layer){
+    let html = "";
+    agentsPulses = agentsPulses.filter(p => p.t < 1);
+    agentsPulses.forEach(p => {
+      p.t += p.speed * (1 + p.t*1.6); // acelera na chegada
+      const pos = agentPositions[p.id];
+      if(!pos) return;
+      const x = pos.x + (AGENTS_CX - pos.x) * p.t;
+      const y = pos.y + (AGENTS_CY - pos.y) * p.t;
+      const op = Math.min(1, (1-p.t)*2 + 0.15);
+      html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="var(--primary)" opacity="${op.toFixed(2)}"/>`;
+      if(p.t >= 0.96 && !p.flashed){ p.flashed = true; flashAgentsCore(); }
+    });
+    layer.innerHTML = html;
+  }
+
+  agentsRafId = requestAnimationFrame(agentsTick);
+}
+
+function startAgentsLoop(){
+  agentsPanelActive = true;
+  if(!agentsRafId) agentsRafId = requestAnimationFrame(agentsTick);
+}
+function stopAgentsLoop(){
+  agentsPanelActive = false;
+  if(agentsRafId){ cancelAnimationFrame(agentsRafId); agentsRafId = null; }
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden){ stopAgentsLoop(); }
+  else if(document.querySelector('.tabbtn[data-tab="agents"]')?.classList.contains("active")){ startAgentsLoop(); fetchAgents(); }
+});
+document.querySelectorAll(".tabbtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if(btn.dataset.tab === "agents"){ fetchAgents(); startAgentsLoop(); }
+    else{ stopAgentsLoop(); }
+  });
+});
+setInterval(() => { if(agentsPanelActive && !document.hidden) fetchAgents(); }, 15000);
+document.getElementById("agentsRefreshBtn").addEventListener("click", () => fetchAgents());
+
+/* ============ BOTÕES DOS PAINÉIS ============ */
+document.getElementById("agendaRefreshBtn").addEventListener("click", () => fetchAllCalendars());
+document.getElementById("emailsRefreshBtn").addEventListener("click", () => fetchAllEmailAccounts());
+document.getElementById("newsRefreshBtn").addEventListener("click", () => fetchAllNews(true));
+document.getElementById("digestRunBtn").addEventListener("click", () => buildAndShowDigest(true));
+document.getElementById("digestSpeakBtn").addEventListener("click", () => {
+  const txt = document.getElementById("digestCard").textContent;
+  if(txt) speak(txt);
+});
+
+/* ============ INICIALIZAÇÃO DOS MÓDULOS NA ATIVAÇÃO ============ */
+document.getElementById("activateBtn").addEventListener("click", async () => {
+  await pingAntenna();
+  renderAgendaPanel();
+  renderEmailsPanel([]);
+  fetchAllNews(false);
+  if(antennaOnline){
+    fetchAllCalendars();
+    fetchAllEmailAccounts();
+  }
+  const todayKey = dayKey(Date.now());
+  if(digestSettings.triggerAuto && localStorage.getItem("jarvis_last_digest") !== todayKey){
+    setTimeout(() => { if(antennaOnline) buildAndShowDigest(digestSettings.speak); }, 4000);
+  }
+  setInterval(() => { if(antennaOnline) fetchAllCalendars(); }, 60*1000);
+  setInterval(() => { if(antennaOnline) fetchAllNews(false); }, 60*1000);
+  setInterval(() => { if(antennaOnline) fetchAllEmailAccounts(); }, 5*60*1000);
+  setInterval(() => { pingAntenna(); }, 30*1000);
+});
+
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FACE MODE — cockpit em tela cheia, componente novo e auto-suficiente.
+     Não depende do app: usa o que existir (voz, dados) via observação de
+     DOM/globais com fallback elegante; nunca quebra se algo não existir.
+     ══════════════════════════════════════════════════════════════ -->
+<style id="face-style">
+  #faceMode{
+    position: fixed; inset: 0; z-index: 500;
+    display: none; opacity: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 1200px 800px at 50% 30%, rgba(34,195,255,.10), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 80% 90%, rgba(139,92,246,.10), transparent 55%),
+      var(--bg, #05060b);
+    font-family: var(--font, sans-serif); color: var(--txt, #eaf1fc);
+    transition: opacity .4s var(--ease, ease);
+    overflow: hidden;
+  }
+  #faceMode.on{ display: block; opacity: 1; pointer-events: auto; }
+  #faceMode::before{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.14;
+    background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(255,255,255,.5) 3px, transparent 4px);
+  }
+  #faceMode::after{
+    content:""; position:absolute; inset:-20%; pointer-events:none; z-index:0;
+    background: conic-gradient(from 0deg, transparent, rgba(34,195,255,.08), transparent 30%, rgba(139,92,246,.08), transparent 60%);
+    animation: faceAuroraSpin 90s linear infinite;
+  }
+  @keyframes faceAuroraSpin{ to{ transform: rotate(360deg); } }
+
+  .face-corner{ position:absolute; width:34px; height:34px; border-color: var(--accent, #8b5cf6); opacity:.55; z-index:2; }
+  .face-corner.tl{ top:16px; left:16px; border-top:1px solid; border-left:1px solid; }
+  .face-corner.tr{ top:16px; right:16px; border-top:1px solid; border-right:1px solid; }
+  .face-corner.bl{ bottom:16px; left:16px; border-bottom:1px solid; border-left:1px solid; }
+  .face-corner.br{ bottom:16px; right:16px; border-bottom:1px solid; border-right:1px solid; }
+
+  .face-top{ position:relative; z-index:2; display:flex; align-items:flex-start; justify-content:space-between; padding: 28px 40px 0; }
+  .face-brand{
+    font-size: clamp(1.3rem,3vw,1.9rem); font-weight:700; letter-spacing:.32em;
+    background: var(--grad, linear-gradient(120deg,#22c3ff,#8b5cf6)); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter: drop-shadow(0 0 18px rgba(34,195,255,.35));
+  }
+  .face-clock{ text-align:right; }
+  .face-time{ font-size: clamp(1.4rem,3.4vw,2.1rem); font-weight:600; font-variant-numeric: tabular-nums; letter-spacing:.06em; }
+  .face-date{ font-size:.72rem; letter-spacing:.18em; color: var(--txt3, #6b7690); text-transform:uppercase; margin-top:2px; }
+
+  .face-orb-wrap{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width: min(46vh,340px); height: min(46vh,340px); z-index:2;
+  }
+  #faceGlobe{ position:absolute; inset:0; width:100%; height:100%; }
+  .face-rings{ position:absolute; inset:0; }
+  .ring{
+    position:absolute; inset:0; border-radius:50%;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  }
+  .ring.r1{ background: conic-gradient(from 0deg, var(--primary,#22c3ff), transparent 30%, transparent 70%, var(--primary,#22c3ff)); animation: spin 9s linear infinite; opacity:.85; }
+  .ring.r2{ inset: 26px; background: conic-gradient(from 90deg, var(--accent,#8b5cf6), transparent 25%, transparent 75%, var(--accent,#8b5cf6)); animation: spinRev 15s linear infinite; opacity:.7; }
+  .ring.r3{ inset: 52px; background: conic-gradient(from 180deg, var(--primary,#22c3ff), transparent 20%, transparent 80%, var(--primary,#22c3ff)); animation: spin 24s linear infinite; opacity:.5; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  @keyframes spinRev{ to{ transform: rotate(-360deg); } }
+  .face-core{
+    position:absolute; inset: 34%; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, var(--primary,#22c3ff), var(--accent,#8b5cf6) 70%, transparent 100%);
+    box-shadow: 0 0 50px 6px rgba(34,195,255,.45);
+    animation: faceBreathe 4.5s ease-in-out infinite;
+  }
+  @keyframes faceBreathe{ 0%,100%{ opacity:.75; transform: scale(.94); } 50%{ opacity:1; transform: scale(1.05); } }
+
+  #faceMode[data-s="listening"] .ring.r1{ animation-duration: 4s; }
+  #faceMode[data-s="listening"] .face-core{ box-shadow: 0 0 66px 10px rgba(34,195,255,.6); }
+  #faceMode[data-s="thinking"] .ring.r1{ animation-duration: 2s; }
+  #faceMode[data-s="thinking"] .ring.r2{ animation-duration: 4s; }
+  #faceMode[data-s="thinking"] .face-core{ animation-duration: 1.4s; }
+  #faceMode[data-s="speaking"] .ring.r3{ animation-duration: 6s; }
+  #faceMode[data-s="speaking"] .face-core{ box-shadow: 0 0 60px 12px rgba(139,92,246,.55); }
+
+  .face-state{
+    position:relative; z-index:2; text-align:center; margin-top: calc(min(46vh,340px) + 34px);
+    font-size:.82rem; letter-spacing:.4em; font-weight:600; color: var(--primary,#22c3ff);
+    text-shadow: 0 0 16px rgba(34,195,255,.5);
+  }
+  .face-legend{
+    position:relative; z-index:2; text-align:center; margin: 10px auto 0; max-width: 60ch; padding: 0 20px;
+    font-size:.95rem; color: var(--txt2,#aab6cc); min-height: 1.4em;
+  }
+
+  .face-hud{ position:absolute; top: 130px; bottom: 96px; width: min(240px,22vw); z-index:2; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+  .face-hud-left{ left: 28px; }
+  .face-hud-right{ right: 28px; }
+  .face-panel{
+    background: var(--card,rgba(14,20,36,.55)); backdrop-filter: blur(14px);
+    border: 1px solid var(--border-strong, rgba(34,195,255,.3)); border-radius: var(--radius-sm,13px);
+    padding: 12px 14px; font-size:.72rem;
+  }
+  .face-panel h5{ font-size:.65rem; letter-spacing:.18em; color: var(--txt3,#6b7690); margin:0 0 8px; text-transform:uppercase; }
+  .face-vital-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-variant-numeric:tabular-nums; }
+  .face-vital-row span:first-child{ width: 44px; color: var(--txt3,#6b7690); font-size:.62rem; letter-spacing:.06em; }
+  .face-vital-bar{ flex:1; height:4px; background: rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+  .face-vital-bar i{ display:block; height:100%; background: var(--grad,linear-gradient(90deg,#22c3ff,#8b5cf6)); width:0%; transition: width .4s var(--ease,ease); }
+  .face-vital-row span:last-child{ width: 38px; text-align:right; color: var(--txt2,#aab6cc); }
+  .face-status-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .face-dot{ width:7px; height:7px; border-radius:50%; background: var(--txt3,#6b7690); flex-shrink:0; }
+  .face-dot.ok{ background: var(--green,#22c55e); box-shadow:0 0 8px rgba(34,197,94,.7); }
+  .face-dot.warn{ background: var(--yellow,#fbbf24); box-shadow:0 0 8px rgba(251,191,36,.7); }
+  .face-dot.off{ background: var(--txt3,#6b7690); }
+  .face-logs{ font-family: var(--font,monospace); font-size:.66rem; line-height:1.6; color: var(--txt3,#6b7690); overflow:hidden; max-height: 160px; }
+  .face-logs div{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .face-feed a{ display:block; color: var(--txt2,#aab6cc); text-decoration:none; font-size:.7rem; padding:5px 0; border-bottom:1px solid var(--border,rgba(148,178,220,.1)); }
+  .face-feed a:hover{ color: var(--primary,#22c3ff); }
+
+  .face-ticker{
+    position:absolute; left:0; right:0; bottom: 44px; z-index:2; text-align:center;
+    font-size:.72rem; letter-spacing:.1em; color: var(--txt3,#6b7690); font-variant-numeric: tabular-nums;
+  }
+  .face-ticker b{ color: var(--txt2,#aab6cc); font-weight:600; margin: 0 4px; }
+  .face-hint{ position:absolute; right:20px; bottom:16px; z-index:2; font-size:.62rem; letter-spacing:.1em; color: var(--txt3,#6b7690); opacity:.7; }
+
+  #faceToggleBtn{ font-size:1.05rem; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ring, .face-core, #faceMode::after{ animation: none !important; }
+  }
+  @media (max-width: 780px){
+    .face-hud{ display:none; }
+    .face-orb-wrap{ width: min(56vw,260px); height: min(56vw,260px); }
+    .face-state{ margin-top: calc(min(56vw,260px) + 30px); }
+  }
+</style>
+
+<div id="faceMode" data-s="idle">
+  <div class="face-corner tl"></div><div class="face-corner tr"></div>
+  <div class="face-corner bl"></div><div class="face-corner br"></div>
+  <div class="face-top">
+    <div class="face-brand">JARVIS</div>
+    <div class="face-clock"><div class="face-time" id="faceTime">--:--:--</div><div class="face-date" id="faceDate">—</div></div>
+  </div>
+  <div class="face-orb-wrap">
+    <canvas id="faceGlobe"></canvas>
+    <div class="face-rings">
+      <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+      <div class="face-core"></div>
+    </div>
+  </div>
+  <div class="face-state" id="faceStateLabel">ONLINE</div>
+  <div class="face-legend" id="faceLegend">Sistemas prontos.</div>
+
+  <div class="face-hud face-hud-left">
+    <div class="face-panel"><h5>Vitals</h5>
+      <div class="face-vital-row"><span>FPS</span><div class="face-vital-bar"><i id="fvFps"></i></div><span id="fvFpsN">—</span></div>
+      <div class="face-vital-row"><span>Heap</span><div class="face-vital-bar"><i id="fvHeap"></i></div><span id="fvHeapN">—</span></div>
+      <div class="face-vital-row"><span>Áudio</span><div class="face-vital-bar"><i id="fvAudio"></i></div><span id="fvAudioN">—</span></div>
+      <div class="face-vital-row"><span>Notas</span><div class="face-vital-bar"><i id="fvNotes"></i></div><span id="fvNotesN">—</span></div>
+    </div>
+    <div class="face-panel"><h5>Status</h5>
+      <div class="face-status-row"><span class="face-dot" id="fsAntenna"></span><span>Antena</span></div>
+      <div class="face-status-row"><span class="face-dot" id="fsVoz"></span><span>Voz</span></div>
+      <div class="face-status-row"><span class="face-dot" id="fsAcao"></span><span id="fsAcaoLabel">E-mails ação</span></div>
+    </div>
+  </div>
+
+  <div class="face-hud face-hud-right">
+    <div class="face-panel"><h5>Logs</h5><div class="face-logs" id="faceLogs"></div></div>
+    <div class="face-panel"><h5>Feeds</h5><div class="face-feed" id="faceFeeds"><div style="color:var(--txt3,#6b7690);">aguardando sync…</div></div></div>
+  </div>
+
+  <div class="face-ticker" id="faceTicker">AGENDA HOJE <b>—</b> · E-MAILS AÇÃO <b>—</b> · NOTAS <b>—</b></div>
+  <div class="face-hint">F sai · clique no orbe pra falar</div>
+</div>
+
+<script id="face-script">
+(function(){
+"use strict";
+
+var faceMode = document.getElementById("faceMode");
+document.body.appendChild(faceMode); // reparenta pra garantir que fica na árvore visível
+
+var rafId = null, running = false, intervalIds = [];
+var canvas = document.getElementById("faceGlobe"), ctx = canvas ? canvas.getContext("2d") : null;
+var points = [];
+
+function buildSphere(n){
+  var pts = [];
+  var offset = 2 / n, increment = Math.PI * (3 - Math.sqrt(5));
+  for(var i = 0; i < n; i++){
+    var y = ((i * offset) - 1) + (offset / 2);
+    var r = Math.sqrt(Math.max(0, 1 - y*y));
+    var phi = (i % n) * increment;
+    pts.push({ x: Math.cos(phi) * r, y: y, z: Math.sin(phi) * r });
+  }
+  return pts;
+}
+points = buildSphere(760);
+
+function audioLevel(){
+  try{
+    if(typeof window._jarvisAudioLevel === "function") return Math.max(0, Math.min(1, window._jarvisAudioLevel()));
+    if(typeof window._micLevel === "function") return Math.max(0, Math.min(1, window._micLevel()));
+  }catch(e){}
+  return null;
+}
+
+var rotY = 0;
+function drawGlobe(t){
+  if(!ctx || !canvas) return;
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if(canvas.width !== w*2){ canvas.width = w*2; canvas.height = h*2; ctx.scale(2,2); }
+  ctx.clearRect(0,0,w,h);
+  var cx = w/2, cy = h/2, radius = Math.min(w,h)*0.42;
+  var lvl = audioLevel();
+  var pulse = lvl===null ? (0.5 + 0.5*Math.sin(t/900)) : lvl;
+  rotY += 0.0018 + pulse*0.004;
+  var cs = Math.cos(rotY), sn = Math.sin(rotY);
+  var css = getComputedStyle(document.documentElement);
+  var primary = (css.getPropertyValue("--primary")||"#22c3ff").trim() || "#22c3ff";
+
+  var proj = points.map(function(p){
+    var x = p.x*cs - p.z*sn, z = p.x*sn + p.z*cs, y = p.y;
+    var scale = radius * (1 + pulse*0.15);
+    return { sx: cx + x*scale, sy: cy + y*scale, depth: z };
+  }).sort(function(a,b){ return a.depth - b.depth; });
+
+  proj.forEach(function(p){
+    var op = 0.15 + (p.depth+1)/2 * 0.65;
+    ctx.beginPath();
+    ctx.fillStyle = primary;
+    ctx.globalAlpha = op;
+    var r = 0.7 + (p.depth+1)/2 * 1.3;
+    ctx.arc(p.sx, p.sy, r, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+var frameCounter = 0;
+function tick(t){
+  if(!running) return;
+  drawGlobe(t);
+  frameCounter++;
+  rafId = requestAnimationFrame(tick);
+}
+
+/* ---- relógio ---- */
+function updateClock(){
+  var now = new Date();
+  var timeEl = document.getElementById("faceTime"), dateEl = document.getElementById("faceDate");
+  if(timeEl) timeEl.textContent = now.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  if(dateEl) dateEl.textContent = now.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" }).toUpperCase();
+}
+
+/* ---- espelha o estado real do orbe do dashboard, se existir (sem tocar no código original) ---- */
+var STATE_MAP = { "OCIOSO":"idle", "OUVINDO":"listening", "PENSANDO":"thinking", "FALANDO":"speaking" };
+function setFaceState(label){
+  var key = STATE_MAP[label] || "idle";
+  faceMode.setAttribute("data-s", key);
+  var el = document.getElementById("faceStateLabel");
+  if(el) el.textContent = key === "idle" ? "ONLINE" : label;
+}
+function bridgeOrbStatus(){
+  try{
+    var el = document.getElementById("orbStatus");
+    if(!el) return;
+    setFaceState(el.textContent.trim());
+    var mo = new MutationObserver(function(){ setFaceState(el.textContent.trim()); });
+    mo.observe(el, { childList:true, characterData:true, subtree:true });
+  }catch(e){}
+}
+function bridgeLegend(){
+  try{
+    var el = document.getElementById("jarvisLine");
+    var legend = document.getElementById("faceLegend");
+    if(!el || !legend) return;
+    legend.textContent = el.textContent || "—";
+    var mo = new MutationObserver(function(){ legend.textContent = el.textContent || "—"; });
+    mo.observe(el, { childList:true, characterData:true, subtree:true });
+  }catch(e){}
+}
+// pontos de extensão genéricos, caso o app um dia exponha esses globais
+try{
+  if(Array.isArray(window._orbSetters)) window._orbSetters.push(function(state){ setFaceState(state); });
+}catch(e){}
+try{
+  if(typeof window._setTranscript === "function"){
+    var orig = window._setTranscript;
+    window._setTranscript = function(){ var r = orig.apply(this, arguments); try{ var l=document.getElementById("faceLegend"); if(l && arguments[0]) l.textContent = arguments[0]; }catch(e){} return r; };
+  }
+}catch(e){}
+
+/* ---- vitals ---- */
+var lastFpsCheck = performance.now(), lastFrameCounter = 0;
+function measureFps(){
+  var now = performance.now();
+  var elapsed = now - lastFpsCheck;
+  var frames = frameCounter - lastFrameCounter;
+  lastFpsCheck = now; lastFrameCounter = frameCounter;
+  if(elapsed <= 0) return 0;
+  return Math.round(frames * 1000 / elapsed);
+}
+function updateVitals(){
+  try{
+    var fps = measureFps();
+    setBar("fvFps","fvFpsN", Math.min(100, fps/60*100), fps);
+  }catch(e){}
+  try{
+    if(performance.memory){
+      var used = performance.memory.usedJSHeapSize, limit = performance.memory.jsHeapSizeLimit;
+      setBar("fvHeap","fvHeapN", (used/limit)*100, Math.round(used/1048576)+"MB");
+    } else { setBar("fvHeap","fvHeapN", 0, "—"); }
+  }catch(e){ setBar("fvHeap","fvHeapN", 0, "—"); }
+  try{
+    var lvl = audioLevel();
+    if(lvl===null){ setBar("fvAudio","fvAudioN", 8+8*Math.sin(Date.now()/700), "demo"); }
+    else{ setBar("fvAudio","fvAudioN", lvl*100, Math.round(lvl*100)+"%"); }
+  }catch(e){}
+  try{
+    var brainCountEl = document.getElementById("brainCount");
+    if(brainCountEl){
+      var m = /(\d+)\s*notas/.exec(brainCountEl.textContent||"");
+      var n = m ? parseInt(m[1],10) : null;
+      setBar("fvNotes","fvNotesN", n ? Math.min(100, n*4) : 0, n===null ? "—" : n);
+    }
+  }catch(e){}
+}
+function setBar(barId, numId, pct, label){
+  var bar = document.getElementById(barId), num = document.getElementById(numId);
+  if(bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  if(num) num.textContent = label;
+}
+
+/* ---- status ---- */
+function updateStatus(){
+  var antennaDot = document.getElementById("fsAntenna");
+  fetch("http://127.0.0.1:4242/ping", { cache:"no-store" })
+    .then(function(r){ if(antennaDot) antennaDot.className = "face-dot " + (r.ok ? "ok" : "warn"); })
+    .catch(function(){ if(antennaDot) antennaDot.className = "face-dot off"; });
+
+  try{
+    var vozDot = document.getElementById("fsVoz");
+    if(vozDot) vozDot.className = "face-dot " + (("speechSynthesis" in window) ? "ok" : "off");
+  }catch(e){}
+
+  try{
+    var acaoDot = document.getElementById("fsAcao"), acaoLbl = document.getElementById("fsAcaoLabel");
+    var badge = document.getElementById("actionEmailBadge");
+    if(badge){
+      var hidden = badge.classList.contains("hidden");
+      var n = parseInt(badge.textContent||"0",10) || 0;
+      if(acaoDot) acaoDot.className = "face-dot " + (hidden || n===0 ? "off" : "warn");
+      if(acaoLbl) acaoLbl.textContent = "E-mails ação: " + (hidden ? "0" : n);
+    }
+  }catch(e){}
+}
+
+/* ---- logs ---- */
+var LOG_MAX = 8;
+function pushLog(msg){
+  var el = document.getElementById("faceLogs");
+  if(!el) return;
+  var time = new Date().toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  var line = document.createElement("div");
+  line.textContent = "[" + time + "] " + msg;
+  el.appendChild(line);
+  while(el.children.length > LOG_MAX) el.removeChild(el.firstChild);
+}
+
+/* ---- feeds ---- */
+function updateFeeds(){
+  var el = document.getElementById("faceFeeds");
+  if(!el) return;
+  try{
+    var items = document.querySelectorAll(".newsItem");
+    if(items.length){
+      var html = "";
+      for(var i=0;i<Math.min(4, items.length);i++){
+        var t = items[i].childNodes[0] ? items[i].childNodes[0].textContent.trim() : items[i].textContent.trim();
+        var href = items[i].getAttribute("href") || "#";
+        html += '<a href="'+href+'" target="_blank" rel="noopener">' + t.slice(0,60) + '</a>';
+      }
+      el.innerHTML = html;
+    } else {
+      el.innerHTML = '<div style="color:var(--txt3,#6b7690);">aguardando sync…</div>';
+    }
+  }catch(e){}
+}
+
+/* ---- ticker ---- */
+function updateTicker(){
+  var el = document.getElementById("faceTicker");
+  if(!el) return;
+  var agendaTxt = "—", emailTxt = "—", notesTxt = "—";
+  try{
+    var ac = document.getElementById("agendaContent");
+    if(ac){ var m = ac.querySelectorAll(".eventRow"); if(m.length) agendaTxt = m.length + " evt"; else if(!/ANTENA OFFLINE/.test(ac.textContent||"")) agendaTxt = "0 evt"; }
+  }catch(e){}
+  try{
+    var badge = document.getElementById("actionEmailBadge");
+    if(badge) emailTxt = badge.classList.contains("hidden") ? "0" : (badge.textContent||"0");
+  }catch(e){}
+  try{
+    var bc = document.getElementById("brainCount");
+    if(bc){ var mm = /(\d+)\s*notas/.exec(bc.textContent||""); if(mm) notesTxt = mm[1]; }
+  }catch(e){}
+  el.innerHTML = "AGENDA HOJE <b>"+agendaTxt+"</b> · E-MAILS AÇÃO <b>"+emailTxt+"</b> · NOTAS <b>"+notesTxt+"</b>";
+}
+
+/* ---- ativação ---- */
+function startLoops(){
+  if(running) return;
+  running = true;
+  rafId = requestAnimationFrame(tick);
+  updateClock(); updateVitals(); updateStatus(); pushLog("núcleo sincronizado"); pushLog("varredura ok — sistemas nominais"); updateFeeds(); updateTicker();
+  intervalIds.push(setInterval(updateClock, 1000));
+  intervalIds.push(setInterval(function(){ if(faceMode.classList.contains("on")) updateVitals(); }, 1000));
+  intervalIds.push(setInterval(function(){ if(faceMode.classList.contains("on")) updateStatus(); }, 15000));
+  intervalIds.push(setInterval(function(){ if(faceMode.classList.contains("on")) updateFeeds(); }, 15000));
+  intervalIds.push(setInterval(function(){ if(faceMode.classList.contains("on")) updateTicker(); }, 15000));
+}
+function stopLoops(){
+  running = false;
+  if(rafId) cancelAnimationFrame(rafId);
+  intervalIds.forEach(function(id){ clearInterval(id); });
+  intervalIds = [];
+}
+
+window.faceModeToggle = function(force){
+  var willOpen = typeof force === "boolean" ? force : !faceMode.classList.contains("on");
+  if(willOpen){
+    faceMode.classList.add("on");
+    startLoops();
+  } else {
+    faceMode.classList.remove("on");
+    stopLoops();
+  }
+};
+
+document.addEventListener("keydown", function(e){
+  var tag = (document.activeElement && document.activeElement.tagName) || "";
+  if(tag === "INPUT" || tag === "TEXTAREA") return;
+  if(e.key === "f" || e.key === "F"){ window.faceModeToggle(); }
+  else if(e.key === "Escape" && faceMode.classList.contains("on")){ window.faceModeToggle(false); }
+});
+
+faceMode.addEventListener("click", function(e){
+  if(e.target.closest(".face-orb-wrap")){
+    try{ if(typeof window.toggleListening === "function") window.toggleListening(); }catch(err){}
+    try{
+      var micBtn = document.getElementById("micBtn");
+      if(micBtn) micBtn.click();
+    }catch(err){}
+  }
+});
+
+function injectToggleButton(){
+  try{
+    var brand = document.querySelector("header.topbar .brand");
+    if(!brand) return;
+    var btn = document.createElement("button");
+    btn.id = "faceToggleBtn"; btn.className = "iconBtn"; btn.title = "FACE (tecla F)";
+    btn.textContent = "🛰";
+    btn.addEventListener("click", function(){ window.faceModeToggle(); });
+    brand.insertAdjacentElement("afterend", btn);
+  }catch(e){}
+}
+
+function init(){
+  injectToggleButton();
+  bridgeOrbStatus();
+  bridgeLegend();
+  updateClock();
+
+  // FACE só abre por pedido explícito: botão 🛰, tecla F, ou ?face=1 na URL.
+  // (a entrada automática após ativar foi desligada — cobria o dashboard e confundia)
+  var params = new URLSearchParams(window.location.search);
+  if(params.get("face") === "1"){
+    window.faceModeToggle(true);
+  }
+}
+
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+
+})();
+</script>
+</body>
+</html>

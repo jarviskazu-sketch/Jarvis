@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Token Control</title>
+
+<!--
+  ══════════════════════════════════════════════════════════════
+  AI TOKEN CONTROL — painel de controle de tokens/custo de IA
+  Arquivo único. Abra com 2 cliques. Não precisa instalar nada.
+  Tudo salva no seu navegador (localStorage) — nada sai da sua máquina.
+
+  ONDE MEXER PRA PERSONALIZAR (veja os comentários "👈 EDITE AQUI"):
+  - Marca/cor/emoji/idioma:      objeto DEFAULT_STATE.brand (linha ~"brand:")
+  - Tabela de preços dos modelos: DEFAULT_STATE.api.priceTable
+  - Orçamento mensal:             DEFAULT_STATE.api.budgetMonthlyUSD
+  - Assinaturas/planos:           DEFAULT_STATE.subscriptions
+  Tudo isso também dá pra editar DENTRO do painel, na aba ⚙️ Config —
+  não precisa nem abrir o código pra maioria das mudanças.
+  ══════════════════════════════════════════════════════════════
+-->
+
+<!-- Único CDN usado: Chart.js, só pra desenhar os gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<style>
+  /* ---------- TOKENS DE TEMA — troque a identidade visual aqui ---------- */
+  :root{
+    --accent: #6C5CE7;        /* 👈 EDITE AQUI: cor de destaque (também editável na aba Config) */
+    --accent-dim: #6C5CE733;
+    --bg: #0b0c14;
+    --bg2: #12131f;
+    --panel: #171927;
+    --panel2: #1d1f30;
+    --border: #2a2d42;
+    --text: #eef0fb;
+    --muted: #9297b3;
+    --muted2: #6a6f8c;
+    --green: #22c55e;
+    --yellow: #f5b62c;
+    --red: #ef4444;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg: #f4f5fa; --bg2: #ffffff; --panel: #ffffff; --panel2: #f0f1f8;
+    --border: #dfe1ee; --text: #171927; --muted: #565b78; --muted2: #7d82a0;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font); }
+  body{ min-height:100vh; }
+  a{ color:var(--accent); }
+  ::selection{ background:var(--accent); color:#fff; }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:99px; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+
+  button, input, select{ font-family:inherit; font-size:inherit; color:inherit; }
+  button{ cursor:pointer; }
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 22px; border-bottom:1px solid var(--border); background:var(--bg2);
+    position:sticky; top:0; z-index:20; flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.15rem; letter-spacing:.01em; }
+  .brand .emoji{ font-size:1.5rem; }
+  .header-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .iconbtn{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:8px 12px; display:flex; align-items:center; gap:6px; transition:.15s;
+  }
+  .iconbtn:hover{ border-color:var(--accent); }
+
+  /* ---------- NAV TABS ---------- */
+  nav.tabs{
+    display:flex; gap:6px; padding:10px 22px; background:var(--bg2); border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:transparent; border:1px solid transparent; border-radius:999px; padding:8px 16px;
+    color:var(--muted); font-weight:600; font-size:.86rem; white-space:nowrap; transition:.15s;
+  }
+  nav.tabs button:hover{ color:var(--text); }
+  nav.tabs button.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+
+  main{ max-width:1280px; margin:0 auto; padding:20px 22px 60px; }
+  .view{ display:none; animation:fadeIn .25s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- KPI CARDS ---------- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:22px; }
+  .kpi-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px 18px; display:flex; flex-direction:column; gap:6px;
+  }
+  .kpi-card .label{ color:var(--muted); font-size:.76rem; text-transform:uppercase; letter-spacing:.06em; }
+  .kpi-card .value{ font-size:1.6rem; font-weight:700; }
+  .kpi-card .sub{ color:var(--muted2); font-size:.78rem; }
+  .kpi-card.warn .value{ color:var(--yellow); }
+  .kpi-card.danger .value{ color:var(--red); }
+
+  /* ---------- PANELS / CARDS ---------- */
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:18px;
+  }
+  .panel h2{ margin:0 0 14px; font-size:1.02rem; }
+  .panel h3{ margin:0 0 10px; font-size:.9rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .grid-charts{ display:grid; grid-template-columns:2fr 1fr; gap:16px; }
+  @media (max-width:820px){ .grid-2, .grid-charts{ grid-template-columns:1fr; } }
+
+  /* ---------- FORMS ---------- */
+  label{ display:block; font-size:.78rem; color:var(--muted); margin-bottom:4px; }
+  input[type=text], input[type=number], input[type=date], input[type=password], select{
+    background:var(--panel2); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:9px 11px; width:100%; color:var(--text); transition:.15s;
+  }
+  input:focus, select:focus{ border-color:var(--accent); outline:none; }
+  .field{ display:flex; flex-direction:column; gap:4px; min-width:120px; flex:1; }
+  .btn{
+    background:var(--panel2); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:9px 16px; font-weight:600; font-size:.85rem; transition:.15s; color:var(--text);
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.danger{ background:transparent; border-color:var(--red); color:var(--red); }
+  .btn.sm{ padding:5px 10px; font-size:.76rem; }
+
+  /* ---------- TABLE ---------- */
+  table{ width:100%; border-collapse:collapse; font-size:.84rem; }
+  th, td{ padding:9px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th{ color:var(--muted); font-weight:600; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; user-select:none; }
+  th:hover{ color:var(--text); }
+  tbody tr:hover{ background:var(--panel2); }
+  .table-wrap{ overflow-x:auto; }
+  .search-input{ max-width:240px; }
+
+  /* ---------- PROGRESS BAR ---------- */
+  .bar{ height:10px; border-radius:99px; background:var(--panel2); overflow:hidden; border:1px solid var(--border); }
+  .bar i{ display:block; height:100%; background:var(--green); transition:width .3s ease, background .3s ease; }
+  .bar.yellow i{ background:var(--yellow); }
+  .bar.red i{ background:var(--red); }
+
+  /* ---------- BADGES ---------- */
+  .badge{ display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:99px; font-size:.72rem; font-weight:700; }
+  .badge.green{ background:#22c55e22; color:var(--green); }
+  .badge.yellow{ background:#f5b62c22; color:var(--yellow); }
+  .badge.red{ background:#ef444422; color:var(--red); }
+  .badge.muted{ background:var(--panel2); color:var(--muted); }
+
+  /* ---------- SUBSCRIPTION CARDS ---------- */
+  .sub-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .sub-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .sub-card .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+  .sub-card .name{ font-weight:700; font-size:1.02rem; }
+  .sub-card .plan-cost{ color:var(--muted2); font-size:.76rem; }
+  .sub-card .stats{ display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); margin:8px 0 4px; }
+  .sub-card .countdown{ font-size:.78rem; color:var(--muted); margin-top:8px; }
+  .sub-card .actions{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .sub-card input[type=number]{ width:70px; }
+
+  /* ---------- EMPTY STATE ---------- */
+  .empty{ text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty .big{ font-size:2.4rem; margin-bottom:8px; }
+
+  /* ---------- MISC ---------- */
+  .hint{ font-size:.74rem; color:var(--muted2); margin-top:4px; }
+  .flex-end{ display:flex; justify-content:flex-end; gap:8px; }
+  .price-table-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px; }
+  .price-table-grid.head{ font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .toast{
+    position:fixed; bottom:20px; right:20px; background:var(--panel); border:1px solid var(--accent);
+    border-radius:var(--radius-sm); padding:12px 18px; font-size:.86rem; z-index:100; box-shadow:0 10px 30px -8px #000a;
+    animation:slideIn .25s ease;
+  }
+  @keyframes slideIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  @media (max-width:560px){
+    header{ padding:12px 14px; }
+    main{ padding:14px 14px 40px; }
+    .kpi-grid{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+<header>
+  <div class="brand"><span class="emoji" id="brandEmoji">🤖</span><span id="brandName">AI Token Control</span></div>
+  <div class="header-actions">
+    <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:0;">
+      <input type="checkbox" id="autoRefreshToggle"> auto-refresh 60s
+    </label>
+    <button class="iconbtn" id="themeToggleBtn" title="Trocar tema">🌓 Tema</button>
+    <button class="iconbtn" id="exportJsonBtn" title="Exportar tudo como JSON">⬇ Exportar</button>
+    <button class="iconbtn" id="importJsonBtn" title="Importar JSON">⬆ Importar</button>
+    <input type="file" id="importJsonInput" accept="application/json" style="display:none;">
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-view="home">🏠 Visão Geral</button>
+  <button class="tab-btn" data-view="api">💳 API</button>
+  <button class="tab-btn" data-view="subs">📋 Assinaturas</button>
+  <button class="tab-btn" data-view="config">⚙️ Config</button>
+</nav>
+
+<main>
+
+  <!-- ═══════════════ HOME ═══════════════ -->
+  <section class="view active" id="view-home">
+    <div class="kpi-grid" id="homeKpis"></div>
+    <div class="panel">
+      <h2>Atalhos</h2>
+      <div class="row">
+        <button class="btn primary" data-goto="api">💳 Registrar uso de API</button>
+        <button class="btn primary" data-goto="subs">📋 Ver assinaturas</button>
+        <button class="btn" data-goto="config">⚙️ Editar preços e planos</button>
+      </div>
+    </div>
+    <div class="panel" id="homeEmptyPanel" style="display:none;">
+      <div class="empty">
+        <div class="big">📊</div>
+        <div>Nenhum dado ainda — adicione uso manualmente, importe um CSV/JSON, ou configure suas assinaturas.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ API ═══════════════ -->
+  <section class="view" id="view-api">
+    <div class="kpi-grid" id="apiKpis"></div>
+
+    <div class="panel">
+      <h2>Orçamento mensal</h2>
+      <div class="bar" id="budgetBar"><i style="width:0%"></i></div>
+      <div class="row" style="margin-top:8px; justify-content:space-between;">
+        <span class="sub" id="budgetText"></span>
+        <span id="budgetBadge"></span>
+      </div>
+      <div class="hint" id="projectionText"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Adicionar uso</h2>
+      <form id="usageForm" class="row" style="align-items:flex-end;">
+        <div class="field"><label for="u-date">Data</label><input type="date" id="u-date" required></div>
+        <div class="field"><label for="u-project">Projeto</label><input type="text" id="u-project" placeholder="ex: Jarvis" required></div>
+        <div class="field"><label for="u-model">Modelo</label><select id="u-model"></select></div>
+        <div class="field"><label for="u-input">Tokens input</label><input type="number" id="u-input" min="0" value="0" required></div>
+        <div class="field"><label for="u-output">Tokens output</label><input type="number" id="u-output" min="0" value="0" required></div>
+        <button class="btn primary" type="submit">+ Adicionar</button>
+      </form>
+      <div class="hint">O custo é calculado sozinho pela tabela de preços (edite em ⚙️ Config).</div>
+    </div>
+
+    <div class="panel">
+      <h3>Filtros</h3>
+      <div class="row">
+        <div class="field">
+          <label for="f-period">Período</label>
+          <select id="f-period">
+            <option value="today">Hoje</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="month" selected>Este mês</option>
+            <option value="all">Tudo</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="field" id="f-custom-from-wrap" style="display:none;"><label for="f-from">De</label><input type="date" id="f-from"></div>
+        <div class="field" id="f-custom-to-wrap" style="display:none;"><label for="f-to">Até</label><input type="date" id="f-to"></div>
+        <div class="field"><label for="f-model">Modelo</label><select id="f-model"><option value="">Todos</option></select></div>
+        <div class="field"><label for="f-project">Projeto</label><select id="f-project"><option value="">Todos</option></select></div>
+      </div>
+    </div>
+
+    <div class="grid-charts">
+      <div class="panel"><h3>Gasto ao longo do tempo</h3><canvas id="chartLine" height="140"></canvas></div>
+      <div class="panel"><h3>Participação por modelo</h3><canvas id="chartDonut" height="140"></canvas></div>
+    </div>
+    <div class="grid-2">
+      <div class="panel"><h3>Custo por modelo</h3><canvas id="chartByModel" height="140"></canvas></div>
+      <div class="panel"><h3>Custo por projeto</h3><canvas id="chartByProject" height="140"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">Uso detalhado</h2>
+        <div class="row">
+          <input type="text" class="search-input" id="usageSearch" placeholder="🔎 buscar...">
+          <button class="btn" id="exportCsvBtn">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table id="usageTable">
+          <thead><tr>
+            <th data-sort="date">Data</th><th data-sort="project">Projeto</th><th data-sort="model">Modelo</th>
+            <th data-sort="inputTokens">Input</th><th data-sort="outputTokens">Output</th><th data-sort="cost">Custo</th><th></th>
+          </tr></thead>
+          <tbody id="usageTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="usageEmpty" style="display:none;">
+        <div class="big">🗒️</div>
+        <div>Nenhum uso registrado ainda — adicione manualmente acima, ou importe um CSV/JSON.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ASSINATURAS ═══════════════ -->
+  <section class="view" id="view-subs">
+    <div class="row" style="justify-content:space-between; margin-bottom:14px;">
+      <h2 style="margin:0;">📋 Assinaturas</h2>
+      <button class="btn primary" id="addSubBtn">+ Novo plano</button>
+    </div>
+    <div class="sub-grid" id="subsGrid"></div>
+    <div class="empty" id="subsEmpty" style="display:none;">
+      <div class="big">📋</div>
+      <div>Nenhuma assinatura cadastrada — clique em "+ Novo plano" pra começar.</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CONFIG ═══════════════ -->
+  <section class="view" id="view-config">
+    <div class="panel">
+      <h2>Marca e visual</h2>
+      <div class="row">
+        <div class="field"><label for="cfg-name">Nome do painel</label><input type="text" id="cfg-name"></div>
+        <div class="field" style="max-width:100px;"><label for="cfg-emoji">Emoji</label><input type="text" id="cfg-emoji" maxlength="4"></div>
+        <div class="field" style="max-width:140px;"><label for="cfg-accent">Cor de destaque</label><input type="text" id="cfg-accent" placeholder="#6C5CE7"></div>
+        <div class="field" style="max-width:140px;"><label for="cfg-theme">Tema</label>
+          <select id="cfg-theme"><option value="dark">Escuro</option><option value="light">Claro</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Moeda</h2>
+      <div class="row">
+        <div class="field" style="max-width:140px;"><label for="cfg-currency">Exibir em</label>
+          <select id="cfg-currency"><option value="USD">USD (US$)</option><option value="BRL">BRL (R$)</option></select>
+        </div>
+        <div class="field" style="max-width:160px;"><label for="cfg-usdbrl">Cotação USD→BRL</label><input type="number" step="0.01" id="cfg-usdbrl"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Orçamento de API</h2>
+      <div class="row">
+        <div class="field" style="max-width:160px;"><label for="cfg-budget">Orçamento mensal (US$)</label><input type="number" step="1" id="cfg-budget"></div>
+        <div class="field" style="max-width:160px;"><label for="cfg-alertpct">Alertar ao passar de (%)</label><input type="number" step="1" min="1" max="100" id="cfg-alertpct"></div>
+        <div class="field" style="max-width:200px;"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cfg-notif"> Notificação do navegador</label></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Tabela de preços (US$ por 1.000.000 de tokens)</h2>
+      <div class="hint" style="margin-bottom:10px;">👈 Preços mudam com frequência — confira sempre no site do provedor antes de confiar 100% nos números.</div>
+      <div class="price-table-grid head"><span>Modelo</span><span>Input</span><span>Output</span><span></span></div>
+      <div id="priceTableRows"></div>
+      <button class="btn sm" id="addPriceRowBtn">+ Adicionar modelo</button>
+    </div>
+
+    <div class="panel">
+      <h2>Dados</h2>
+      <div class="row">
+        <button class="btn" id="exportJsonBtn2">⬇ Exportar JSON</button>
+        <button class="btn" id="importJsonBtn2">⬆ Importar JSON</button>
+        <button class="btn danger" id="resetAllBtn">🗑 Limpar tudo</button>
+      </div>
+      <div class="hint">Exportar gera um arquivo com TODOS os seus dados (uso, preços, planos, config). Importar substitui o que está aqui — faça backup antes se tiver dúvida.</div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toastHost"></div>
+
+<!-- ═══ Modal simples pra editar/adicionar assinatura ═══ -->
+<div id="subModalOverlay" style="display:none; position:fixed; inset:0; background:#000a; z-index:200; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:22px; width:min(420px,94vw);">
+    <h3 id="subModalTitle" style="margin:0 0 14px;">Novo plano</h3>
+    <div class="field" style="margin-bottom:10px;"><label for="sm-name">Nome</label><input type="text" id="sm-name"></div>
+    <div class="row" style="margin-bottom:10px;">
+      <div class="field"><label for="sm-unit">Unidade</label>
+        <select id="sm-unit">
+          <option value="messages">Mensagens</option>
+          <option value="requests">Requests</option>
+          <option value="credits">Créditos</option>
+          <option value="tokens">Tokens</option>
+        </select>
+      </div>
+      <div class="field"><label for="sm-limit">Limite</label><input type="number" id="sm-limit" min="0"></div>
+    </div>
+    <div class="row" style="margin-bottom:10px;">
+      <div class="field"><label for="sm-resettype">Reseta</label>
+        <select id="sm-resettype">
+          <option value="rolling">A cada N horas (janela rolante)</option>
+          <option value="daily">Diariamente</option>
+          <option value="monthly">Mensalmente</option>
+        </select>
+      </div>
+      <div class="field" id="sm-hours-wrap"><label for="sm-hours">A cada quantas horas</label><input type="number" id="sm-hours" min="1"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px;"><label for="sm-cost">Custo mensal fixo (US$, opcional)</label><input type="number" step="0.01" id="sm-cost" min="0"></div>
+    <div class="flex-end">
+      <button class="btn" id="subModalCancel">Cancelar</button>
+      <button class="btn primary" id="subModalSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   ESTADO PADRÃO — isto só é usado na PRIMEIRA vez que o painel abre.
+   Depois disso tudo vive no localStorage e é editável pela tela.
+   ══════════════════════════════════════════════════════════════ */
+const DEFAULT_STATE = {
+  brand:    { name: "AI Token Control", emoji: "🤖", accent: "#6C5CE7", theme: "dark", lang: "pt-BR" }, // 👈 EDITE AQUI
+  currency: { base: "USD", usdToBrl: 5.40 }, // 👈 EDITE AQUI: cotação do dólar
+
+  api: {
+    budgetMonthlyUSD: 200,  // 👈 EDITE AQUI: seu orçamento mensal de API
+    alertPct: 80,
+    notif: false,
+    autoRefresh: false,
+    // US$ por 1.000.000 de tokens — 👈 EDITE AQUI (preços mudam, confira no site do provedor!)
+    priceTable: {
+      "claude-opus-4":   { input: 15.00, output: 75.00 },
+      "claude-sonnet-4": { input: 3.00,  output: 15.00 },
+      "claude-haiku":    { input: 0.80,  output: 4.00 },
+      "gpt-4o":          { input: 2.50,  output: 10.00 },
+      "gpt-4o-mini":     { input: 0.15,  output: 0.60 },
+      "gemini-2.5-pro":  { input: 1.25,  output: 10.00 },
+      "deepseek-v3":     { input: 0.27,  output: 1.10 }
+    },
+    usage: [] // { id, date, project, model, inputTokens, outputTokens }
+  },
+
+  // Assinaturas pré-cadastradas com base no que você usa — 👈 EDITE OS LIMITES!
+  // (a maioria dos provedores não expõe API de cota, por isso o uso aqui é manual)
+  subscriptions: [
+    { id:"sub_chatgpt",  name:"ChatGPT",     unit:"messages", limit:80,  used:0, resetType:"rolling", resetEveryHours:3,  resetAnchor: new Date().toISOString(), priceMonthlyUSD:20 },
+    { id:"sub_claude",   name:"Claude",      unit:"messages", limit:900, used:0, resetType:"rolling", resetEveryHours:5,  resetAnchor: new Date().toISOString(), priceMonthlyUSD:100 },
+    { id:"sub_windsor",  name:"Windsor.AI",  unit:"credits",  limit:0,   used:0, resetType:"monthly", resetAnchor: new Date().toISOString(), priceMonthlyUSD:0 },
+    { id:"sub_gamma",    name:"Gamma",       unit:"credits",  limit:0,   used:0, resetType:"monthly", resetAnchor: new Date().toISOString(), priceMonthlyUSD:0 },
+    { id:"sub_perplexity",name:"Perplexity", unit:"requests", limit:0,   used:0, resetType:"daily",   resetAnchor: new Date().toISOString(), priceMonthlyUSD:0 },
+    { id:"sub_manus",    name:"Manus",       unit:"credits",  limit:0,   used:0, resetType:"daily",   resetAnchor: new Date().toISOString(), priceMonthlyUSD:0 },
+    { id:"sub_github",   name:"GitHub Copilot", unit:"requests", limit:0, used:0, resetType:"monthly", resetAnchor: new Date().toISOString(), priceMonthlyUSD:0 }
+    // limit:0 = "CONFIGURE AQUI" — edite o limite real do seu plano na aba Assinaturas ou Config.
+  ]
+};
+
+const MODEL_LABELS = {
+  "claude-opus-4":"Claude Opus 4", "claude-sonnet-4":"Claude Sonnet 4", "claude-haiku":"Claude Haiku",
+  "gpt-4o":"GPT-4o", "gpt-4o-mini":"GPT-4o mini", "gemini-2.5-pro":"Gemini 2.5 Pro", "deepseek-v3":"DeepSeek V3"
+};
+const UNIT_LABELS = { messages:"mensagens", requests:"requests", credits:"créditos", tokens:"tokens" };
+const STORAGE_KEY = "ai_token_control_state_v1";
+
+/* ============ PERSISTÊNCIA ============ */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // mescla com o padrão pra garantir que campos novos existam mesmo em estado antigo salvo
+      return Object.assign({}, DEFAULT_STATE, parsed, {
+        brand: Object.assign({}, DEFAULT_STATE.brand, parsed.brand),
+        currency: Object.assign({}, DEFAULT_STATE.currency, parsed.currency),
+        api: Object.assign({}, DEFAULT_STATE.api, parsed.api, { priceTable: Object.assign({}, DEFAULT_STATE.api.priceTable, (parsed.api||{}).priceTable) })
+      });
+    }
+  }catch(e){
+    console.warn("Estado salvo estava corrompido, usando padrão.", e);
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+let STATE = loadState();
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }
+
+/* ============ HELPERS ============ */
+function uid(prefix){ return (prefix||"id") + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmtMoney(usd){
+  const val = STATE.currency.base === "BRL" ? usd * (STATE.currency.usdToBrl||0) : usd;
+  const symbol = STATE.currency.base === "BRL" ? "R$" : "US$";
+  return symbol + " " + val.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function fmtNum(n){ return (n||0).toLocaleString("pt-BR"); }
+function toast(msg){
+  const host = document.getElementById("toastHost");
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+function calcCost(model, inputTokens, outputTokens){
+  const price = STATE.api.priceTable[model];
+  if(!price) return 0; // modelo sem preço cadastrado = custo 0, evita quebrar a tela
+  return (inputTokens/1e6) * price.input + (outputTokens/1e6) * price.output;
+}
+function monthKey(dateStr){ return (dateStr||"").slice(0,7); } // "2026-07"
+function todayMonthKey(){ return new Date().toISOString().slice(0,7); }
+function daysInMonth(monthKey){
+  const [y,m] = monthKey.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+/* ============ TEMA / MARCA ============ */
+function applyBrandAndTheme(){
+  document.documentElement.style.setProperty("--accent", STATE.brand.accent || "#6C5CE7");
+  document.body.setAttribute("data-theme", STATE.brand.theme === "light" ? "light" : "dark");
+  document.getElementById("brandName").textContent = STATE.brand.name || "AI Token Control";
+  document.getElementById("brandEmoji").textContent = STATE.brand.emoji || "🤖";
+  document.title = STATE.brand.name || "AI Token Control";
+}
+
+/* ============ NAVEGAÇÃO ENTRE ABAS ============ */
+function switchView(name){
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.view === name));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-"+name));
+  if(name === "home") renderHome();
+  if(name === "api") renderApiView();
+  if(name === "subs") renderSubsView();
+  if(name === "config") renderConfigView();
+}
+document.querySelectorAll(".tab-btn").forEach(b => b.addEventListener("click", () => switchView(b.dataset.view)));
+document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => switchView(b.dataset.goto)));
+
+/* ══════════════════════════════════════════════════════════════
+   RESET AUTOMÁTICO DE ASSINATURAS — roda a cada minuto, avança
+   o "resetAnchor" e zera "used" quando o ciclo vira, mesmo sem
+   o usuário clicar em nada.
+   ══════════════════════════════════════════════════════════════ */
+function nextMonthlyAnchor(anchorDate){
+  const d = new Date(anchorDate);
+  const day = d.getDate();
+  const next = new Date(d);
+  next.setMonth(next.getMonth()+1);
+  // trata meses com menos dias (ex: cadastrou dia 31, próximo mês pode não ter dia 31)
+  if(next.getDate() !== day) next.setDate(0);
+  return next;
+}
+function checkSubscriptionResets(){
+  let changed = false;
+  const now = new Date();
+  STATE.subscriptions.forEach(sub => {
+    let anchor = new Date(sub.resetAnchor || now.toISOString());
+    let guard = 0; // evita loop infinito se algo estiver mal configurado
+    while(guard++ < 1000){
+      let next;
+      if(sub.resetType === "rolling") next = new Date(anchor.getTime() + (sub.resetEveryHours||1)*3600*1000);
+      else if(sub.resetType === "daily") next = new Date(anchor.getTime() + 24*3600*1000);
+      else next = nextMonthlyAnchor(anchor); // monthly
+      if(next > now) break;
+      anchor = next;
+      sub.used = 0;
+      sub.resetAnchor = anchor.toISOString();
+      changed = true;
+    }
+  });
+  if(changed) save();
+  return changed;
+}
+function getNextResetDate(sub){
+  const anchor = new Date(sub.resetAnchor || Date.now());
+  if(sub.resetType === "rolling") return new Date(anchor.getTime() + (sub.resetEveryHours||1)*3600*1000);
+  if(sub.resetType === "daily") return new Date(anchor.getTime() + 24*3600*1000);
+  return nextMonthlyAnchor(anchor);
+}
+function fmtCountdown(targetDate){
+  const ms = targetDate - Date.now();
+  if(ms <= 0) return "resetando…";
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+  if(h >= 24){ const d = Math.floor(h/24); return `${d}d ${h%24}h`; }
+  return `${h}h ${m}min`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CÁLCULOS AGREGADOS
+   ══════════════════════════════════════════════════════════════ */
+function usageWithCost(){
+  return STATE.api.usage.map(u => Object.assign({}, u, { cost: calcCost(u.model, u.inputTokens, u.outputTokens) }));
+}
+function monthSpendUSD(mKey){
+  mKey = mKey || todayMonthKey();
+  return usageWithCost().filter(u => monthKey(u.date) === mKey).reduce((s,u)=>s+u.cost, 0);
+}
+function totalSubscriptionsCostUSD(){
+  return STATE.subscriptions.reduce((s,sub)=> s + (Number(sub.priceMonthlyUSD)||0), 0);
+}
+function subsNearLimitCount(){
+  return STATE.subscriptions.filter(sub => sub.limit>0 && (sub.used/sub.limit) >= (STATE.api.alertPct/100)).length;
+}
+function budgetProjection(){
+  const mKey = todayMonthKey();
+  const spend = monthSpendUSD(mKey);
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const totalDays = daysInMonth(mKey);
+  const dailyRate = dayOfMonth > 0 ? spend / dayOfMonth : 0;
+  const projected = dailyRate * totalDays;
+  return { spend, projected, dailyRate, daysLeft: totalDays - dayOfMonth };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER — HOME
+   ══════════════════════════════════════════════════════════════ */
+function renderHome(){
+  const spend = monthSpendUSD();
+  const budget = STATE.api.budgetMonthlyUSD || 0;
+  const balance = budget - spend;
+  const totalIA = spend + totalSubscriptionsCostUSD();
+  const nearLimit = subsNearLimitCount();
+
+  const kpis = [
+    { label:"Gasto de API (mês)", value: fmtMoney(spend), cls: spend > budget ? "danger" : "" },
+    { label:"Saldo do orçamento", value: fmtMoney(balance), cls: balance < 0 ? "danger" : (balance < budget*0.2 ? "warn" : "") },
+    { label:"Custo total de IA", value: fmtMoney(totalIA), sub:"API + assinaturas" },
+    { label:"Planos perto do limite", value: nearLimit, cls: nearLimit>0 ? "warn" : "" }
+  ];
+  document.getElementById("homeKpis").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls||""}">
+      <div class="label">${k.label}</div>
+      <div class="value">${k.value}</div>
+      ${k.sub?`<div class="sub">${k.sub}</div>`:""}
+    </div>`).join("");
+
+  const empty = STATE.api.usage.length===0 && STATE.subscriptions.every(s=>s.used===0);
+  document.getElementById("homeEmptyPanel").style.display = empty ? "" : "none";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER — API
+   ══════════════════════════════════════════════════════════════ */
+let charts = { line:null, donut:null, byModel:null, byProject:null };
+let sortState = { key:"date", dir:-1 };
+
+function populateModelSelects(){
+  const models = Object.keys(STATE.api.priceTable);
+  const optHtml = models.map(m => `<option value="${m}">${MODEL_LABELS[m]||m}</option>`).join("");
+  document.getElementById("u-model").innerHTML = optHtml || '<option value="">— cadastre um modelo em Config —</option>';
+  document.getElementById("f-model").innerHTML = '<option value="">Todos</option>' + optHtml;
+}
+
+function getFilteredUsage(){
+  const period = document.getElementById("f-period").value;
+  const modelF = document.getElementById("f-model").value;
+  const projectF = document.getElementById("f-project").value;
+  const now = new Date();
+  let fromDate = null, toDate = null;
+
+  if(period === "today"){ fromDate = new Date(now.toDateString()); }
+  else if(period === "7d"){ fromDate = new Date(now.getTime()-7*86400000); }
+  else if(period === "30d"){ fromDate = new Date(now.getTime()-30*86400000); }
+  else if(period === "month"){ fromDate = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if(period === "custom"){
+    const f = document.getElementById("f-from").value, t = document.getElementById("f-to").value;
+    if(f) fromDate = new Date(f);
+    if(t) toDate = new Date(t + "T23:59:59");
+  }
+
+  return usageWithCost().filter(u => {
+    const d = new Date(u.date);
+    if(fromDate && d < fromDate) return false;
+    if(toDate && d > toDate) return false;
+    if(modelF && u.model !== modelF) return false;
+    if(projectF && u.project !== projectF) return false;
+    return true;
+  });
+}
+
+function renderApiView(){
+  populateModelSelects();
+
+  // popula filtro de projetos com os projetos existentes
+  const projects = [...new Set(STATE.api.usage.map(u=>u.project))].sort();
+  const projSel = document.getElementById("f-project");
+  const curProj = projSel.value;
+  projSel.innerHTML = '<option value="">Todos</option>' + projects.map(p=>`<option value="${p}">${p}</option>`).join("");
+  projSel.value = curProj;
+
+  const proj = budgetProjection();
+  const budget = STATE.api.budgetMonthlyUSD || 0;
+  const pct = budget > 0 ? (proj.spend/budget*100) : 0;
+
+  document.getElementById("apiKpis").innerHTML = [
+    { label:"Gasto neste mês", value: fmtMoney(proj.spend) },
+    { label:"Orçamento", value: fmtMoney(budget) },
+    { label:"Projeção fim do mês", value: fmtMoney(proj.projected), cls: proj.projected>budget?"danger":"" },
+    { label:"Ritmo diário", value: fmtMoney(proj.dailyRate) + "/dia" }
+  ].map(k => `<div class="kpi-card ${k.cls||""}"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`).join("");
+
+  // barra de orçamento
+  const bar = document.getElementById("budgetBar");
+  const barI = bar.querySelector("i");
+  const pctClamped = Math.min(100, pct);
+  barI.style.width = pctClamped + "%";
+  bar.className = "bar " + (pct>=100 ? "red" : pct>=STATE.api.alertPct ? "yellow" : "");
+  document.getElementById("budgetText").textContent = budget>0
+    ? `${fmtMoney(proj.spend)} de ${fmtMoney(budget)} usados (${pct.toFixed(1)}%)`
+    : "defina um orçamento mensal em ⚙️ Config";
+  const badgeEl = document.getElementById("budgetBadge");
+  if(budget<=0) badgeEl.innerHTML = "";
+  else if(pct>=100) badgeEl.innerHTML = '<span class="badge red">⚠ estourou o orçamento</span>';
+  else if(pct>=STATE.api.alertPct) badgeEl.innerHTML = '<span class="badge yellow">atenção, perto do limite</span>';
+  else badgeEl.innerHTML = '<span class="badge green">dentro do orçamento</span>';
+
+  document.getElementById("projectionText").textContent = proj.daysLeft>0
+    ? `No ritmo atual (${fmtMoney(proj.dailyRate)}/dia), você deve gastar ${fmtMoney(proj.projected)} até o fim do mês — faltam ${proj.daysLeft} dia(s).`
+    : "Último dia do mês.";
+
+  renderUsageTable();
+  renderApiCharts();
+}
+
+function renderUsageTable(){
+  const rows = getFilteredUsage();
+  const search = (document.getElementById("usageSearch").value||"").toLowerCase();
+  let filtered = rows.filter(r => !search || (r.project+" "+r.model).toLowerCase().includes(search));
+
+  filtered.sort((a,b) => {
+    let av=a[sortState.key], bv=b[sortState.key];
+    if(sortState.key==="date"){ av=new Date(av).getTime(); bv=new Date(bv).getTime(); }
+    if(typeof av === "string") return av.localeCompare(bv) * sortState.dir;
+    return (av-bv) * sortState.dir;
+  });
+
+  const tbody = document.getElementById("usageTableBody");
+  document.getElementById("usageEmpty").style.display = filtered.length ? "none" : "";
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td>${u.date}</td><td>${escapeHtml(u.project)}</td><td>${MODEL_LABELS[u.model]||u.model}</td>
+      <td>${fmtNum(u.inputTokens)}</td><td>${fmtNum(u.outputTokens)}</td><td>${fmtMoney(u.cost)}</td>
+      <td><button class="btn sm danger" data-del="${u.id}">✕</button></td>
+    </tr>`).join("");
+  tbody.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
+    STATE.api.usage = STATE.api.usage.filter(u => u.id !== b.dataset.del);
+    save(); renderApiView(); renderHome();
+    toast("Registro removido.");
+  }));
+}
+
+function escapeHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function chartColors(n){
+  const base = ["#6C5CE7","#22c55e","#f5b62c","#ef4444","#3b82f6","#ec4899","#14b8a6","#f97316","#8b5cf6","#84cc16"];
+  const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
+}
+
+function renderApiCharts(){
+  const rows = getFilteredUsage();
+  const search = (document.getElementById("usageSearch").value||"").toLowerCase();
+  const filtered = rows.filter(r => !search || (r.project+" "+r.model).toLowerCase().includes(search));
+
+  // linha: gasto por dia
+  const byDay = {};
+  filtered.forEach(u => { byDay[u.date] = (byDay[u.date]||0) + u.cost; });
+  const days = Object.keys(byDay).sort();
+  drawChart("line", "chartLine", {
+    type:"line",
+    data:{ labels: days, datasets:[{ label:"Gasto (US$)", data: days.map(d=>byDay[d]), borderColor:"#6C5CE7", backgroundColor:"#6C5CE733", tension:.3, fill:true }] },
+    options: baseChartOptions()
+  });
+
+  // rosca: participação por modelo
+  const byModel = {};
+  filtered.forEach(u => { byModel[u.model] = (byModel[u.model]||0) + u.cost; });
+  const modelKeys = Object.keys(byModel);
+  drawChart("donut", "chartDonut", {
+    type:"doughnut",
+    data:{ labels: modelKeys.map(m=>MODEL_LABELS[m]||m), datasets:[{ data: modelKeys.map(m=>byModel[m]), backgroundColor: chartColors(modelKeys.length) }] },
+    options: { plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue("--text") } } } }
+  });
+
+  // barra: custo por modelo
+  drawChart("byModel", "chartByModel", {
+    type:"bar",
+    data:{ labels: modelKeys.map(m=>MODEL_LABELS[m]||m), datasets:[{ label:"US$", data: modelKeys.map(m=>byModel[m]), backgroundColor:"#6C5CE7" }] },
+    options: baseChartOptions()
+  });
+
+  // barra: custo por projeto
+  const byProject = {};
+  filtered.forEach(u => { byProject[u.project] = (byProject[u.project]||0) + u.cost; });
+  const projKeys = Object.keys(byProject);
+  drawChart("byProject", "chartByProject", {
+    type:"bar",
+    data:{ labels: projKeys, datasets:[{ label:"US$", data: projKeys.map(p=>byProject[p]), backgroundColor:"#22c55e" }] },
+    options: baseChartOptions()
+  });
+}
+function baseChartOptions(){
+  const txt = getComputedStyle(document.body).getPropertyValue("--text");
+  const grid = getComputedStyle(document.body).getPropertyValue("--border");
+  return {
+    plugins:{ legend:{ labels:{ color: txt } } },
+    scales:{ x:{ ticks:{ color: txt }, grid:{ color: grid } }, y:{ ticks:{ color: txt }, grid:{ color: grid } } }
+  };
+}
+function drawChart(key, canvasId, config){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  if(charts[key]) charts[key].destroy();
+  charts[key] = new Chart(canvas.getContext("2d"), config);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER — ASSINATURAS
+   ══════════════════════════════════════════════════════════════ */
+function renderSubsView(){
+  checkSubscriptionResets();
+  const grid = document.getElementById("subsGrid");
+  document.getElementById("subsEmpty").style.display = STATE.subscriptions.length ? "none" : "";
+
+  grid.innerHTML = STATE.subscriptions.map(sub => {
+    const pct = sub.limit>0 ? (sub.used/sub.limit*100) : 0;
+    const barClass = pct>=100 ? "red" : pct>=STATE.api.alertPct ? "yellow" : "";
+    const unit = UNIT_LABELS[sub.unit] || sub.unit;
+    const remaining = Math.max(0, (sub.limit||0) - (sub.used||0));
+    const nextReset = getNextResetDate(sub);
+
+    // projeção: ritmo de uso desde o início do ciclo atual → estoura antes do reset?
+    const anchor = new Date(sub.resetAnchor || Date.now());
+    const hoursElapsed = Math.max(0.01, (Date.now()-anchor.getTime())/3600000);
+    const ratePerHour = sub.used / hoursElapsed;
+    const hoursToReset = Math.max(0.01, (nextReset-Date.now())/3600000);
+    const projectedAtReset = sub.used + ratePerHour*hoursToReset;
+    const willBust = sub.limit>0 && projectedAtReset > sub.limit && sub.used < sub.limit;
+
+    return `<div class="sub-card">
+      <div class="top">
+        <div>
+          <div class="name">${escapeHtml(sub.name)}</div>
+          ${sub.priceMonthlyUSD>0 ? `<div class="plan-cost">${fmtMoney(sub.priceMonthlyUSD)}/mês</div>` : ""}
+        </div>
+        <div>
+          ${sub.limit<=0 ? '<span class="badge muted">defina o limite</span>' :
+            pct>=100 ? '<span class="badge red">estourou</span>' :
+            pct>=STATE.api.alertPct ? '<span class="badge yellow">atenção</span>' : '<span class="badge green">tranquilo</span>'}
+        </div>
+      </div>
+      <div class="bar ${barClass}"><i style="width:${Math.min(100,pct)}%"></i></div>
+      <div class="stats">
+        <span>${fmtNum(sub.used)} / ${sub.limit>0?fmtNum(sub.limit):"?"} ${unit}</span>
+        <span>${sub.limit>0?fmtNum(remaining)+" restam":""}</span>
+      </div>
+      <div class="countdown">🔄 reseta em: <b>${fmtCountdown(nextReset)}</b></div>
+      ${willBust ? `<div class="hint" style="color:var(--yellow);">⚠ no ritmo atual, deve estourar antes do reset.</div>` : ""}
+      <div class="actions">
+        <button class="btn sm" data-inc="${sub.id}" data-n="1">+1</button>
+        <input type="number" min="1" value="10" id="n-${sub.id}">
+        <button class="btn sm" data-incn="${sub.id}">+N</button>
+        <button class="btn sm" data-reset="${sub.id}">Resetar ciclo</button>
+        <button class="btn sm" data-edit="${sub.id}">Editar</button>
+        <button class="btn sm danger" data-remove="${sub.id}">Excluir</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  grid.querySelectorAll("[data-inc]").forEach(b => b.addEventListener("click", () => bumpSub(b.dataset.inc, 1)));
+  grid.querySelectorAll("[data-incn]").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.incn;
+    const n = parseInt(document.getElementById("n-"+id).value, 10) || 0;
+    bumpSub(id, n);
+  }));
+  grid.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", () => {
+    const sub = STATE.subscriptions.find(s=>s.id===b.dataset.reset);
+    if(sub){ sub.used = 0; sub.resetAnchor = new Date().toISOString(); save(); renderSubsView(); renderHome(); toast("Ciclo resetado."); }
+  }));
+  grid.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openSubModal(b.dataset.edit)));
+  grid.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", () => {
+    if(!confirm("Excluir este plano?")) return;
+    STATE.subscriptions = STATE.subscriptions.filter(s=>s.id!==b.dataset.remove);
+    save(); renderSubsView(); renderHome();
+  }));
+}
+function bumpSub(id, n){
+  const sub = STATE.subscriptions.find(s=>s.id===id);
+  if(!sub) return;
+  sub.used = Math.max(0, (sub.used||0) + n);
+  save(); renderSubsView(); renderHome();
+}
+
+/* ---- modal de edição de assinatura ---- */
+let editingSubId = null;
+function openSubModal(id){
+  editingSubId = id || null;
+  const sub = id ? STATE.subscriptions.find(s=>s.id===id) : null;
+  document.getElementById("subModalTitle").textContent = sub ? "Editar plano" : "Novo plano";
+  document.getElementById("sm-name").value = sub ? sub.name : "";
+  document.getElementById("sm-unit").value = sub ? sub.unit : "messages";
+  document.getElementById("sm-limit").value = sub ? sub.limit : 0;
+  document.getElementById("sm-resettype").value = sub ? sub.resetType : "monthly";
+  document.getElementById("sm-hours").value = sub ? (sub.resetEveryHours||5) : 5;
+  document.getElementById("sm-cost").value = sub ? (sub.priceMonthlyUSD||0) : 0;
+  toggleHoursField();
+  document.getElementById("subModalOverlay").style.display = "flex";
+}
+function toggleHoursField(){
+  document.getElementById("sm-hours-wrap").style.display = document.getElementById("sm-resettype").value==="rolling" ? "" : "none";
+}
+document.getElementById("sm-resettype").addEventListener("change", toggleHoursField);
+document.getElementById("addSubBtn").addEventListener("click", () => openSubModal(null));
+document.getElementById("subModalCancel").addEventListener("click", () => { document.getElementById("subModalOverlay").style.display = "none"; });
+document.getElementById("subModalSave").addEventListener("click", () => {
+  const name = document.getElementById("sm-name").value.trim();
+  if(!name){ toast("Dê um nome pro plano."); return; }
+  const data = {
+    name,
+    unit: document.getElementById("sm-unit").value,
+    limit: Math.max(0, parseInt(document.getElementById("sm-limit").value,10) || 0),
+    resetType: document.getElementById("sm-resettype").value,
+    resetEveryHours: Math.max(1, parseInt(document.getElementById("sm-hours").value,10) || 5),
+    priceMonthlyUSD: Math.max(0, parseFloat(document.getElementById("sm-cost").value) || 0)
+  };
+  if(editingSubId){
+    const sub = STATE.subscriptions.find(s=>s.id===editingSubId);
+    Object.assign(sub, data);
+  } else {
+    STATE.subscriptions.push(Object.assign({ id: uid("sub"), used:0, resetAnchor: new Date().toISOString() }, data));
+  }
+  save();
+  document.getElementById("subModalOverlay").style.display = "none";
+  renderSubsView(); renderHome();
+  toast("Plano salvo.");
+});
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER — CONFIG
+   ══════════════════════════════════════════════════════════════ */
+function renderConfigView(){
+  document.getElementById("cfg-name").value = STATE.brand.name;
+  document.getElementById("cfg-emoji").value = STATE.brand.emoji;
+  document.getElementById("cfg-accent").value = STATE.brand.accent;
+  document.getElementById("cfg-theme").value = STATE.brand.theme;
+  document.getElementById("cfg-currency").value = STATE.currency.base;
+  document.getElementById("cfg-usdbrl").value = STATE.currency.usdToBrl;
+  document.getElementById("cfg-budget").value = STATE.api.budgetMonthlyUSD;
+  document.getElementById("cfg-alertpct").value = STATE.api.alertPct;
+  document.getElementById("cfg-notif").checked = !!STATE.api.notif;
+  renderPriceTableEditor();
+}
+function renderPriceTableEditor(){
+  const wrap = document.getElementById("priceTableRows");
+  const models = Object.keys(STATE.api.priceTable);
+  wrap.innerHTML = models.map(m => `
+    <div class="price-table-grid" data-model-row="${m}">
+      <input type="text" value="${MODEL_LABELS[m]||m}" data-price-label="${m}">
+      <input type="number" step="0.01" value="${STATE.api.priceTable[m].input}" data-price-input="${m}">
+      <input type="number" step="0.01" value="${STATE.api.priceTable[m].output}" data-price-output="${m}">
+      <button class="btn sm danger" data-price-remove="${m}">✕</button>
+    </div>`).join("");
+
+  wrap.querySelectorAll("[data-price-input]").forEach(el => el.addEventListener("change", () => {
+    STATE.api.priceTable[el.dataset.priceInput].input = parseFloat(el.value)||0; save();
+  }));
+  wrap.querySelectorAll("[data-price-output]").forEach(el => el.addEventListener("change", () => {
+    STATE.api.priceTable[el.dataset.priceOutput].output = parseFloat(el.value)||0; save();
+  }));
+  wrap.querySelectorAll("[data-price-label]").forEach(el => el.addEventListener("change", () => {
+    MODEL_LABELS[el.dataset.priceLabel] = el.value; save();
+  }));
+  wrap.querySelectorAll("[data-price-remove]").forEach(el => el.addEventListener("click", () => {
+    delete STATE.api.priceTable[el.dataset.priceRemove];
+    save(); renderPriceTableEditor(); populateModelSelects();
+  }));
+}
+document.getElementById("addPriceRowBtn").addEventListener("click", () => {
+  const id = "modelo-" + (Object.keys(STATE.api.priceTable).length+1);
+  STATE.api.priceTable[id] = { input:0, output:0 };
+  save(); renderPriceTableEditor(); populateModelSelects();
+});
+
+/* listeners de config — salvam ao digitar/mudar */
+function bindConfigField(id, apply){
+  document.getElementById(id).addEventListener("change", (e) => { apply(e.target); save(); applyBrandAndTheme(); renderHome(); });
+}
+bindConfigField("cfg-name", el => STATE.brand.name = el.value.trim() || "AI Token Control");
+bindConfigField("cfg-emoji", el => STATE.brand.emoji = el.value || "🤖");
+bindConfigField("cfg-accent", el => STATE.brand.accent = /^#[0-9a-fA-F]{3,6}$/.test(el.value) ? el.value : STATE.brand.accent);
+bindConfigField("cfg-theme", el => STATE.brand.theme = el.value);
+bindConfigField("cfg-currency", el => STATE.currency.base = el.value);
+bindConfigField("cfg-usdbrl", el => STATE.currency.usdToBrl = parseFloat(el.value)||0);
+bindConfigField("cfg-budget", el => STATE.api.budgetMonthlyUSD = parseFloat(el.value)||0);
+bindConfigField("cfg-alertpct", el => STATE.api.alertPct = Math.min(100, Math.max(1, parseFloat(el.value)||80)));
+document.getElementById("cfg-notif").addEventListener("change", e => {
+  STATE.api.notif = e.target.checked;
+  if(STATE.api.notif && "Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  save();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   FORMULÁRIO DE USO (API)
+   ══════════════════════════════════════════════════════════════ */
+document.getElementById("usageForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const model = document.getElementById("u-model").value;
+  if(!model){ toast("Cadastre um modelo em ⚙️ Config antes."); return; }
+  STATE.api.usage.push({
+    id: uid("u"),
+    date: document.getElementById("u-date").value || new Date().toISOString().slice(0,10),
+    project: document.getElementById("u-project").value.trim() || "Sem projeto",
+    model,
+    inputTokens: Math.max(0, parseInt(document.getElementById("u-input").value,10) || 0),
+    outputTokens: Math.max(0, parseInt(document.getElementById("u-output").value,10) || 0)
+  });
+  save();
+  document.getElementById("usageForm").reset();
+  document.getElementById("u-date").value = new Date().toISOString().slice(0,10);
+  renderApiView(); renderHome();
+  toast("Uso registrado.");
+  checkBudgetAlert();
+});
+document.getElementById("u-date").value = new Date().toISOString().slice(0,10);
+
+/* filtros */
+["f-period","f-model","f-project"].forEach(id => document.getElementById(id).addEventListener("change", () => {
+  document.getElementById("f-custom-from-wrap").style.display = document.getElementById("f-period").value==="custom" ? "" : "none";
+  document.getElementById("f-custom-to-wrap").style.display = document.getElementById("f-period").value==="custom" ? "" : "none";
+  renderUsageTable(); renderApiCharts();
+}));
+["f-from","f-to"].forEach(id => document.getElementById(id).addEventListener("change", () => { renderUsageTable(); renderApiCharts(); }));
+document.getElementById("usageSearch").addEventListener("input", () => { renderUsageTable(); renderApiCharts(); });
+
+/* ordenação da tabela */
+document.querySelectorAll("#usageTable th[data-sort]").forEach(th => th.addEventListener("click", () => {
+  const key = th.dataset.sort;
+  sortState.dir = (sortState.key===key) ? -sortState.dir : -1;
+  sortState.key = key;
+  renderUsageTable();
+}));
+
+/* ══════════════════════════════════════════════════════════════
+   ALERTAS
+   ══════════════════════════════════════════════════════════════ */
+function checkBudgetAlert(){
+  const proj = budgetProjection();
+  const budget = STATE.api.budgetMonthlyUSD||0;
+  if(budget<=0) return;
+  const pct = proj.spend/budget*100;
+  if(pct>=100) notify("Orçamento de API estourado!", `Você já gastou ${fmtMoney(proj.spend)} de ${fmtMoney(budget)} este mês.`);
+  else if(pct>=STATE.api.alertPct) notify("Perto do orçamento de API", `${pct.toFixed(0)}% do orçamento mensal já foi usado.`);
+}
+function notify(title, body){
+  if(STATE.api.notif && "Notification" in window && Notification.permission === "granted"){
+    try{ new Notification(title, { body }); }catch(e){}
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORTAR / IMPORTAR / CSV / RESET
+   ══════════════════════════════════════════════════════════════ */
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportJson(){
+  downloadFile("ai-token-control-backup.json", JSON.stringify(STATE, null, 2), "application/json");
+  toast("JSON exportado.");
+}
+function importJsonFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed || typeof parsed !== "object" || !parsed.api || !parsed.subscriptions){
+        toast("Esse arquivo não parece um backup válido do AI Token Control.");
+        return;
+      }
+      STATE = parsed;
+      save();
+      applyBrandAndTheme();
+      switchView("home");
+      toast("Dados importados com sucesso.");
+    }catch(e){
+      toast("Não consegui ler esse JSON — arquivo inválido ou corrompido.");
+    }
+  };
+  reader.onerror = () => toast("Erro ao ler o arquivo.");
+  reader.readAsText(file);
+}
+function exportCsv(){
+  const rows = usageWithCost();
+  if(!rows.length){ toast("Nada pra exportar ainda."); return; }
+  const header = "data,projeto,modelo,tokens_input,tokens_output,custo_usd\n";
+  const body = rows.map(u => [u.date, u.project, u.model, u.inputTokens, u.outputTokens, u.cost.toFixed(4)]
+    .map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  downloadFile("ai-token-control-uso.csv", header+body, "text/csv;charset=utf-8;");
+  toast("CSV exportado.");
+}
+[ "exportJsonBtn","exportJsonBtn2" ].forEach(id => document.getElementById(id).addEventListener("click", exportJson));
+[ "importJsonBtn","importJsonBtn2" ].forEach(id => document.getElementById(id).addEventListener("click", () => document.getElementById("importJsonInput").click()));
+document.getElementById("importJsonInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if(file) importJsonFile(file);
+  e.target.value = "";
+});
+document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+document.getElementById("resetAllBtn").addEventListener("click", () => {
+  if(!confirm("Isso apaga TODOS os dados do painel (uso, planos, config). Tem certeza?")) return;
+  STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  save(); applyBrandAndTheme(); switchView("home");
+  toast("Tudo limpo.");
+});
+
+/* ══════════════════════════════════════════════════════════════
+   TEMA / AUTO-REFRESH
+   ══════════════════════════════════════════════════════════════ */
+document.getElementById("themeToggleBtn").addEventListener("click", () => {
+  STATE.brand.theme = STATE.brand.theme === "light" ? "dark" : "light";
+  save(); applyBrandAndTheme();
+  renderApiCharts(); // recarrega cores dos gráficos pro novo tema
+});
+document.getElementById("autoRefreshToggle").addEventListener("change", (e) => {
+  STATE.api.autoRefresh = e.target.checked; save();
+});
+setInterval(() => {
+  if(!STATE.api.autoRefresh) return;
+  const activeView = document.querySelector(".view.active").id;
+  if(activeView === "view-home") renderHome();
+  if(activeView === "view-api") renderApiView();
+  if(activeView === "view-subs") renderSubsView();
+}, 60000);
+
+/* reset automático de assinaturas: checa a cada minuto, mesmo sem interação */
+setInterval(() => {
+  if(checkSubscriptionResets() && document.querySelector(".view.active").id === "view-subs") renderSubsView();
+}, 60000);
+
+/* ══════════════════════════════════════════════════════════════
+   INICIALIZAÇÃO
+   ══════════════════════════════════════════════════════════════ */
+document.getElementById("f-custom-from-wrap").style.display = "none";
+document.getElementById("f-custom-to-wrap").style.display = "none";
+checkSubscriptionResets();
+applyBrandAndTheme();
+document.getElementById("autoRefreshToggle").checked = !!STATE.api.autoRefresh;
+switchView("home");
+
+})();
+</script>
+</body>
+</html>

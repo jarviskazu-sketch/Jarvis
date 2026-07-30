@@ -1,0 +1,15 @@
+# Tokens e credenciais — NUNCA commitar
+*.txt
+*.env
+*.key
+*.pem
+secrets/
+
+# Node
+node_modules/
+dist/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
