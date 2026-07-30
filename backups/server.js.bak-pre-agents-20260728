@@ -1,0 +1,483 @@
+/*
+ * ANTENA DO JARVIS
+ * Node puro (http, https, tls) — zero dependências, zero npm install.
+ * Escuta só em 127.0.0.1: existe unicamente para o jarvis.html do
+ * seu próprio navegador ler agenda, e-mails e notícias sem esbarrar
+ * no CORS. Rode com: node server.js
+ */
+
+const http = require("http");
+const https = require("https");
+const tls = require("tls");
+
+const PORT = 4242;
+
+/* Domínios liberados para o proxy de agenda/notícias.
+   Se sua agenda usar outro domínio (ex: outro provedor de calendário),
+   adicione aqui — é seu arquivo, roda local, editar é seguro. */
+const ALLOWED_PROXY_HOSTS = [
+  "calendar.google.com",
+  "news.google.com",
+  "outlook.office365.com",
+  "outlook.live.com",
+  "outlook.office.com",
+  "titan.email"
+];
+
+/* Hosts IMAP liberados para a Central de E-mails.
+   Adicione aqui outros provedores se precisar. */
+const ALLOWED_IMAP_HOSTS = [
+  "imap.gmail.com",
+  "titan.email",
+  "outlook.office365.com"
+];
+
+function isAllowedHost(hostname, list) {
+  const h = String(hostname || "").toLowerCase();
+  return list.some((allowed) => h === allowed || h.endsWith("." + allowed));
+}
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "content-type"
+  };
+}
+
+function maskEmail(email) {
+  const s = String(email || "");
+  const at = s.indexOf("@");
+  if (at < 0) return "***";
+  return s.slice(0, 2) + "***" + s.slice(at);
+}
+function maskSecret() {
+  return "••••••••";
+}
+
+function loginFailedMessage(host) {
+  const h = String(host || "").toLowerCase();
+  if (h.endsWith("imap.gmail.com")) {
+    return "Senha de app invalida ou verificacao em 2 etapas desativada - refaca em myaccount.google.com/apppasswords";
+  }
+  if (h.endsWith("outlook.office365.com")) {
+    return "Login recusado pelo Outlook/365. Se for conta pessoal, gere a senha de app em account.live.com/proofs/AppPassword. Se for conta corporativa (like a da empresa), o IMAP com senha de app pode estar bloqueado pelo administrador de TI (a Microsoft desativou por padrao o login basico do IMAP em contas corporativas desde 2022) - confirme com o TI se a autenticacao basica/IMAP esta liberada pra essa caixa.";
+  }
+  if (h.endsWith("titan.email")) {
+    return "Login recusado pelo Titan/HostGator. Confirme usuario (e-mail completo) e senha, e confirme que o IMAP esta habilitado na caixa (Configuracoes > POP/IMAP no webmail).";
+  }
+  return "Senha de app invalida ou login recusado pelo provedor.";
+}
+
+/* ============ BUSCA HTTPS COM REDIRECTS (proxy de agenda/notícias) ============ */
+function fetchWithRedirects(targetUrl, maxRedirects, cb) {
+  let redirectsLeft = maxRedirects;
+  function go(u) {
+    let parsed;
+    try {
+      parsed = new URL(u);
+    } catch (e) {
+      cb(new Error("URL inválida"));
+      return;
+    }
+    const opts = {
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      port: parsed.port || 443,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+      }
+    };
+    const req = https.get(opts, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
+        redirectsLeft--;
+        const nextUrl = new URL(res.headers.location, u).toString();
+        res.resume();
+        go(nextUrl);
+        return;
+      }
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => cb(null, { statusCode: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
+    });
+    req.on("error", (err) => cb(err));
+    req.setTimeout(15000, () => req.destroy(new Error("tempo esgotado")));
+  }
+  go(targetUrl);
+}
+
+/* ============ CLIENTE IMAP MÍNIMO (só tls nativo) ============ */
+class ImapClient {
+  constructor(host) {
+    this.host = host;
+    this.tagN = 0;
+    this.acc = "";
+    this.socket = null;
+    this.waiters = [];
+  }
+  connect() {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      this.socket = tls.connect({ host: this.host, port: 993, servername: this.host }, () => {});
+      this.socket.setTimeout(20000, () => {
+        if (!settled) { settled = true; reject(new Error("timeout ao conectar no IMAP")); }
+        this.socket.destroy();
+      });
+      this.socket.on("data", (chunk) => {
+        this.acc += chunk.toString("latin1");
+        this._checkWaiters();
+      });
+      this.socket.on("error", (err) => {
+        if (!settled) { settled = true; reject(err); }
+        this._rejectAll(err);
+      });
+      this._wait(null)
+        .then(() => { settled = true; resolve(); })
+        .catch((err) => { if (!settled) { settled = true; reject(err); } });
+    });
+  }
+  _nextTag() {
+    this.tagN++;
+    return "A" + this.tagN;
+  }
+  _wait(tag) {
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ tag, resolve, reject });
+      this._checkWaiters();
+    });
+  }
+  _rejectAll(err) {
+    while (this.waiters.length) this.waiters.shift().reject(err);
+  }
+  _checkWaiters() {
+    if (!this.waiters.length) return;
+    const w = this.waiters[0];
+    if (w.tag === null) {
+      const idx = this.acc.indexOf("\r\n");
+      if (idx !== -1) {
+        const line = this.acc.slice(0, idx);
+        this.acc = this.acc.slice(idx + 2);
+        this.waiters.shift();
+        w.resolve(line);
+        this._checkWaiters();
+      }
+      return;
+    }
+    const marker = "\r\n" + w.tag + " ";
+    let idx = this.acc.indexOf(marker);
+    let markerLen = marker.length;
+    if (idx === -1 && this.acc.startsWith(w.tag + " ")) {
+      idx = -2; // marca "achou no início do buffer"
+      markerLen = (w.tag + " ").length;
+    }
+    if (idx === -1) return;
+    const searchFrom = idx === -2 ? 0 : idx + 2;
+    const lineEnd = this.acc.indexOf("\r\n", searchFrom + markerLen);
+    if (lineEnd === -1) return;
+    const full = this.acc.slice(0, lineEnd + 2);
+    this.acc = this.acc.slice(lineEnd + 2);
+    this.waiters.shift();
+    w.resolve(full);
+    this._checkWaiters();
+  }
+  cmd(command) {
+    const tag = this._nextTag();
+    this.socket.write(tag + " " + command + "\r\n");
+    return this._wait(tag).then((resp) => ({ tag, resp }));
+  }
+  quit() {
+    try { this.socket.write("AZ LOGOUT\r\n"); } catch (e) {}
+    try { this.socket.end(); } catch (e) {}
+    try { this.socket.destroy(); } catch (e) {}
+  }
+}
+
+function imapQuote(s) {
+  return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+}
+
+/* extrai os blocos "* N FETCH (...)" respeitando literais {N} */
+function parseFetchBlocks(text) {
+  const emails = [];
+  const blockRe = /\*\s*(\d+)\s*FETCH\s*\(/g;
+  let m;
+  while ((m = blockRe.exec(text))) {
+    const p = blockRe.lastIndex;
+    const uidM = /UID\s+(\d+)/.exec(text.slice(p, p + 40));
+    const uid = uidM ? uidM[1] : String(m[1]);
+    const flagsM = /FLAGS\s*\(([^)]*)\)/.exec(text.slice(p, p + 300));
+    const flags = flagsM ? flagsM[1].split(/\s+/).filter(Boolean) : [];
+
+    let cursor = p;
+    let headerText = "";
+    const headerMarkerRe = /BODY\[HEADER\.FIELDS[^\]]*\]\s*\{(\d+)\}\r\n/;
+    const hM = headerMarkerRe.exec(text.slice(cursor, cursor + 2000));
+    if (hM) {
+      const literalLen = parseInt(hM[1], 10);
+      const literalStart = cursor + hM.index + hM[0].length;
+      headerText = text.slice(literalStart, literalStart + literalLen);
+      cursor = literalStart + literalLen;
+    }
+
+    let bodyText = "";
+    const bodyMarkerRe = /BODY\[TEXT\](?:<\d+>)?\s*\{(\d+)\}\r\n/;
+    const bM = bodyMarkerRe.exec(text.slice(cursor, cursor + 200));
+    if (bM) {
+      const literalLen = parseInt(bM[1], 10);
+      const literalStart = cursor + bM.index + bM[0].length;
+      bodyText = text.slice(literalStart, literalStart + literalLen);
+      cursor = literalStart + literalLen;
+    }
+    blockRe.lastIndex = cursor;
+    emails.push({ uid, flags, headerRaw: headerText, bodyRaw: bodyText });
+  }
+  return emails;
+}
+
+function unfoldHeaders(raw) {
+  return raw
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .reduce((acc, line) => {
+      if (/^[ \t]/.test(line) && acc.length) acc[acc.length - 1] += " " + line.trim();
+      else if (line.trim()) acc.push(line);
+      return acc;
+    }, []);
+}
+function getHeader(lines, name) {
+  const re = new RegExp("^" + name + ":\\s*(.*)$", "i");
+  for (const l of lines) {
+    const m = re.exec(l);
+    if (m) return m[1].trim();
+  }
+  return "";
+}
+function decodeMimeWords(s) {
+  if (!s) return s;
+  return s.replace(/=\?([^?]+)\?([BQ])\?([^?]*)\?=/gi, (_, charset, enc, data) => {
+    try {
+      let buf;
+      if (enc.toUpperCase() === "B") {
+        buf = Buffer.from(data, "base64");
+      } else {
+        const cleaned = data.replace(/_/g, " ").replace(/=([0-9A-Fa-f]{2})/g, (_m, h) => String.fromCharCode(parseInt(h, 16)));
+        buf = Buffer.from(cleaned, "latin1");
+      }
+      return buf.toString(/utf-?8/i.test(charset) ? "utf8" : "latin1");
+    } catch (e) {
+      return data;
+    }
+  });
+}
+function decodeBodyContent(content, cte) {
+  try {
+    if (cte === "base64") return Buffer.from(content.replace(/\s+/g, ""), "base64").toString("utf8");
+    if (cte === "quoted-printable") {
+      const unfolded = content.replace(/=\r\n/g, "");
+      const bytes = unfolded.replace(/=([0-9A-Fa-f]{2})/g, (_m, h) => String.fromCharCode(parseInt(h, 16)));
+      return Buffer.from(bytes, "latin1").toString("utf8");
+    }
+    return Buffer.from(content, "latin1").toString("utf8");
+  } catch (e) {
+    return content;
+  }
+}
+function stripHtml(html) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function extractPlainText(bodyRaw, topContentType, topCTE) {
+  const boundaryMatch = /boundary="?([^";\r\n]+)"?/i.exec(topContentType || "");
+  if (boundaryMatch) {
+    const boundary = boundaryMatch[1];
+    const parts = bodyRaw.split("--" + boundary);
+    let plainPart = null, htmlPart = null;
+    parts.forEach((part) => {
+      const ctM = /Content-Type:\s*([^\r\n;]+)/i.exec(part);
+      const cteM = /Content-Transfer-Encoding:\s*([^\r\n]+)/i.exec(part);
+      const ct = ctM ? ctM[1].trim().toLowerCase() : "";
+      const cte = cteM ? cteM[1].trim().toLowerCase() : "7bit";
+      const blankIdx = part.indexOf("\r\n\r\n");
+      if (blankIdx === -1) return;
+      const content = part.slice(blankIdx + 4);
+      const decoded = decodeBodyContent(content, cte);
+      if (ct === "text/plain" && !plainPart) plainPart = decoded;
+      else if (ct === "text/html" && !htmlPart) htmlPart = decoded;
+    });
+    if (plainPart) return plainPart;
+    if (htmlPart) return stripHtml(htmlPart);
+    return "";
+  }
+  const decoded = decodeBodyContent(bodyRaw, (topCTE || "7bit").toLowerCase());
+  return /html/i.test(topContentType || "") ? stripHtml(decoded) : decoded;
+}
+
+async function fetchEmailsIMAP(host, usuario, senhaApp, quantidade) {
+  const client = new ImapClient(host);
+  await client.connect();
+  const loginResp = await client.cmd("LOGIN " + imapQuote(usuario) + " " + imapQuote(senhaApp));
+  if (!/\sOK\b/i.test(loginResp.resp)) {
+    // a resposta do servidor nunca inclui a senha de volta - seguro de logar
+    console.log(`[antena] resposta do LOGIN recusado (${host}): ${loginResp.resp.trim()}`);
+    client.quit();
+    throw new Error("LOGIN_FAILED");
+  }
+  const examineResp = await client.cmd("EXAMINE INBOX");
+  const existsM = /\*\s*(\d+)\s*EXISTS/i.exec(examineResp.resp);
+  const exists = existsM ? parseInt(existsM[1], 10) : 0;
+  if (exists === 0) {
+    client.quit();
+    return [];
+  }
+  const n = Math.max(1, Math.min(quantidade || 20, 200));
+  const from = Math.max(1, exists - n + 1);
+  const to = exists;
+  const fetchResp = await client.cmd(
+    `${from}:${to} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.4000>)`
+  );
+  client.quit();
+  const blocks = parseFetchBlocks(fetchResp.resp);
+  return blocks.map((b) => {
+    const hLines = unfoldHeaders(b.headerRaw);
+    const from_ = decodeMimeWords(getHeader(hLines, "From"));
+    const subject = decodeMimeWords(getHeader(hLines, "Subject"));
+    const date = getHeader(hLines, "Date");
+    const msgId = getHeader(hLines, "Message-Id") || host + "-" + b.uid;
+    const ct = getHeader(hLines, "Content-Type");
+    const cte = getHeader(hLines, "Content-Transfer-Encoding");
+    let excerpt = "";
+    try {
+      excerpt = extractPlainText(b.bodyRaw, ct, cte).slice(0, 500);
+    } catch (e) {
+      excerpt = "";
+    }
+    return { id: msgId, from: from_, subject, date, excerpt, read: b.flags.includes("\\Seen") };
+  });
+}
+
+/* ============ SERVIDOR HTTP ============ */
+const server = http.createServer((req, res) => {
+  let parsedReq;
+  try {
+    parsedReq = new URL(req.url, "http://127.0.0.1:" + PORT);
+  } catch (e) {
+    res.writeHead(400, corsHeaders());
+    res.end("requisicao invalida");
+    return;
+  }
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, corsHeaders());
+    res.end();
+    return;
+  }
+
+  if (req.method === "GET" && parsedReq.pathname === "/ping") {
+    res.writeHead(200, { ...corsHeaders(), "content-type": "text/plain" });
+    res.end("ok");
+    return;
+  }
+
+  if (req.method === "GET" && parsedReq.pathname === "/proxy") {
+    const target = parsedReq.searchParams.get("url");
+    if (!target) {
+      res.writeHead(400, corsHeaders());
+      res.end("faltou o parametro url");
+      return;
+    }
+    let targetParsed;
+    try {
+      targetParsed = new URL(target);
+    } catch (e) {
+      res.writeHead(400, corsHeaders());
+      res.end("url invalida");
+      return;
+    }
+    if (targetParsed.protocol !== "https:" || !isAllowedHost(targetParsed.hostname, ALLOWED_PROXY_HOSTS)) {
+      console.log(`[antena] proxy bloqueado — host nao permitido: ${targetParsed.hostname}`);
+      res.writeHead(403, corsHeaders());
+      res.end(
+        "dominio nao liberado na antena. se voce confia nessa fonte, adicione '" +
+          targetParsed.hostname +
+          "' em ALLOWED_PROXY_HOSTS no server.js."
+      );
+      return;
+    }
+    console.log(`[antena] proxy -> ${targetParsed.hostname} (caminho oculto)`);
+    fetchWithRedirects(target, 3, (err, result) => {
+      if (err) {
+        res.writeHead(502, corsHeaders());
+        res.end("erro ao buscar: " + err.message);
+        return;
+      }
+      res.writeHead(result.statusCode, {
+        ...corsHeaders(),
+        "content-type": result.headers["content-type"] || "text/plain; charset=utf-8"
+      });
+      res.end(result.body);
+    });
+    return;
+  }
+
+  if (req.method === "POST" && parsedReq.pathname === "/emails") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 2000) req.destroy(); });
+    req.on("end", async () => {
+      let payload;
+      try {
+        payload = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "json invalido" }));
+        return;
+      }
+      const { host, usuario, senhaApp, quantidade } = payload || {};
+      if (!host || !usuario || !senhaApp) {
+        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "faltam campos (host, usuario, senhaApp)" }));
+        return;
+      }
+      if (!isAllowedHost(host, ALLOWED_IMAP_HOSTS)) {
+        console.log(`[antena] IMAP bloqueado — host nao permitido: ${host}`);
+        res.writeHead(403, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "host IMAP nao liberado. adicione '" + host + "' em ALLOWED_IMAP_HOSTS no server.js." }));
+        return;
+      }
+      console.log(`[antena] IMAP ${host} usuario=${maskEmail(usuario)} senha=${maskSecret()}`);
+      try {
+        const emails = await fetchEmailsIMAP(host, usuario, senhaApp, quantidade);
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ emails }));
+      } catch (e) {
+        const msg = e.message === "LOGIN_FAILED" ? loginFailedMessage(host) : "erro ao conectar no IMAP: " + e.message;
+        console.log(`[antena] erro IMAP (${host}): ${e.message}`);
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ error: msg }));
+      }
+    });
+    return;
+  }
+
+  res.writeHead(404, corsHeaders());
+  res.end("rota nao encontrada");
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.log(`\n⚠ A porta ${PORT} já está em uso. Feche o outro processo (ou outra instância do server.js) e tente de novo.\n`);
+    process.exit(1);
+  } else {
+    console.log("Erro no servidor:", err.message);
+  }
+});
+
+server.listen(PORT, "127.0.0.1", () => {
+  console.log(`\n⚡ ANTENA DO JARVIS ONLINE — porta ${PORT}. Pode abrir o jarvis.html.\n`);
+});
