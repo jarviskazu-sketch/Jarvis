@@ -152,14 +152,16 @@
   #editorBox textarea{ min-height:90px; resize:vertical; }
   .editor-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
 
-  /* ---------- NOTE VIEW (leitura da nota ao clicar num tema) ---------- */
+  /* ---------- NOTE VIEW (leitura da nota, flutuante perto de onde clicou) ---------- */
   #noteViewOverlay{
-    position:fixed; inset:0; background:rgba(2,5,10,0.75); z-index:200;
-    display:flex; align-items:center; justify-content:center; padding:16px;
+    position:fixed; inset:0; background:transparent; z-index:200;
   }
   #noteViewBox{
+    position:fixed; top:0; left:0; /* posição real definida via JS, perto do clique */
     background:var(--panel); border:1px solid #1c2740; border-radius:14px;
-    width:min(440px,94vw); padding:22px; display:flex; flex-direction:column; gap:12px;
+    width:340px; max-height:70vh; overflow-y:auto;
+    padding:18px; display:flex; flex-direction:column; gap:10px;
+    box-shadow:0 20px 50px -12px rgba(0,0,0,.6);
   }
   .noteViewHead{ display:flex; align-items:center; gap:8px; }
   .noteViewDot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
@@ -486,7 +488,8 @@ section.brain{
 .legend .injected{ font-weight: 600; }
 
 /* ---- note editor / settings modals (glass) ---- */
-#editorOverlay, #settingsOverlay, #noteViewOverlay{ backdrop-filter: blur(6px); animation: fadeIn .2s var(--ease); }
+#editorOverlay, #settingsOverlay{ backdrop-filter: blur(6px); animation: fadeIn .2s var(--ease); }
+#noteViewBox{ animation: fadeIn .15s var(--ease); }
 #editorBox, #settingsBox, #noteViewBox{
   background: var(--card-strong) !important; backdrop-filter: blur(22px) saturate(140%);
   border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
@@ -1584,7 +1587,7 @@ function renderAreaExpanded(container, W, H, cx, cy, areas, area){
   container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${graphStyle()}${graphDefs()}${raysHtml}${edgesHtml}${otherAreasHtml}${nodesHtml}${hubHtml}<g id="synapseLayer"></g></svg>`;
 
   container.querySelectorAll(".graphNode").forEach(g => {
-    g.addEventListener("click", () => openNoteView(g.getAttribute("data-id")));
+    g.addEventListener("click", () => openNoteView(g.getAttribute("data-id"), g));
   });
   container.querySelectorAll(".areaNode[data-area]").forEach(g => {
     g.addEventListener("click", () => { openArea = g.getAttribute("data-area"); renderGraph(); });
@@ -1684,9 +1687,9 @@ function openEditor(id){
 }
 function closeEditor(){ document.getElementById("editorOverlay").classList.add("hidden"); editingId = null; }
 
-/* ============ NOTE VIEW (clicar no tema mostra a nota) ============ */
+/* ============ NOTE VIEW (clicar no tema mostra a nota, flutuando perto do clique) ============ */
 let viewingId = null;
-function openNoteView(id){
+function openNoteView(id, anchorEl){
   const note = notes.find(n => n.id === id);
   if(!note) return;
   viewingId = id;
@@ -1695,10 +1698,36 @@ function openNoteView(id){
   document.getElementById("noteViewArea").textContent = area.label;
   document.getElementById("noteViewTitle").textContent = note.title;
   document.getElementById("noteViewBody").textContent = note.body;
-  document.getElementById("noteViewOverlay").classList.remove("hidden");
+
+  const overlay = document.getElementById("noteViewOverlay");
+  const box = document.getElementById("noteViewBox");
+  box.style.maxWidth = ""; // reseta antes de medir, senão o clamp de uma abertura anterior interfere
+  overlay.classList.remove("hidden");
+
+  // posiciona o card bem perto de onde foi clicado (não no centro da tela), sem deixar vazar da viewport.
+  // síncrono (sem rAF): remover "hidden" já força o layout, então offsetWidth/Height abaixo já vêm corretos.
+  const vw = window.innerWidth || document.documentElement.clientWidth || 360;
+  const vh = window.innerHeight || document.documentElement.clientHeight || 640;
+  if(vw < 360) box.style.maxWidth = Math.max(200, vw - 20) + "px";
+  const rect = anchorEl ? anchorEl.getBoundingClientRect() : null;
+  const boxW = box.offsetWidth, boxH = box.offsetHeight;
+  const anchorX = rect ? rect.left + rect.width/2 : vw/2;
+  const anchorY = rect ? rect.top + rect.height : vh/2;
+  let left = anchorX - boxW/2;
+  let top = anchorY + 14;
+  left = Math.max(10, Math.min(left, vw - boxW - 10));
+  if(top + boxH > vh - 10){
+    top = (rect ? rect.top : anchorY) - boxH - 14; // não coube embaixo, abre por cima do clique
+    if(top < 10) top = 10;
+  }
+  box.style.left = left + "px";
+  box.style.top = top + "px";
 }
 function closeNoteView(){ document.getElementById("noteViewOverlay").classList.add("hidden"); viewingId = null; }
 document.getElementById("noteViewCloseBtn").addEventListener("click", closeNoteView);
+document.getElementById("noteViewOverlay").addEventListener("click", (e) => {
+  if(e.target.id === "noteViewOverlay") closeNoteView(); // clicou fora do card
+});
 document.getElementById("noteViewEditBtn").addEventListener("click", () => {
   const id = viewingId;
   closeNoteView();
