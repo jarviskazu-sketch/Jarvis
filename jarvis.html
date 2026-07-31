@@ -920,6 +920,8 @@ const AREA = {
   aprendizado: { label:"Aprendizado", color:"#2dd4ff" },
   saude:       { label:"Saúde",       color:"#10b981" },
   relacoes:    { label:"Relações",    color:"#ec4899" },
+  espiritual:  { label:"Espiritual",  color:"#60a5fa" },
+  bens:        { label:"Bens Materiais", color:"#facc15" },
   meta:        { label:"Sobre Você",  color:"#8a90a6" }
 };
 
@@ -939,7 +941,16 @@ const DEFAULT_NOTES = [
   { id:"familia",      area:"relacoes",    title:"Mãe",               body:"Mora com a mãe. Boa convivência, mas relação reservada — ela conhece pouco dos planos e próximos passos dele." },
   { id:"irma",         area:"relacoes",    title:"Irmã",              body:"Tem uma irmã, que é casada e tem uma filha — sobrinha do Mateus." },
   { id:"gabriel",      area:"relacoes",    title:"Gabriel Morais",    body:"Parceiro de confiança principal. Conhece praticamente todos os planos, metas, objetivos e sonhos dele — é quem ele procura para opinião sincera e decisões importantes." },
-  { id:"amigos",       area:"relacoes",    title:"Amigos-Chave",      body:"Círculo de confiança: Nando Santana, Rada, Felipe Santos e José." }
+  { id:"amigos",       area:"relacoes",    title:"Amigos-Chave",      body:"Círculo de confiança: Nando Santana, Rada, Felipe Santos e José." },
+
+  { id:"ritual_metas", area:"meta", title:"Ritual de Metas Anuais", body:"Todo ano, por volta da última semana de dezembro, monta um PPT de metas e objetivos pro ano seguinte, dividido por áreas da vida — cada área ganha um personagem-mascote do Toy Story (Woody=Intelecto, Buzz Lightyear=Profissional, Jessie=Saúde/Físico, Porquinho=Financeiro, Alien=Sócio-afetivo, Slinky=Espiritual, Sr. Cabeça de Batata=Bens Materiais). É o ritual de planejamento pessoal dele — vale revisar esse PPT com ele perto do fim do ano." },
+  { id:"metas2026_socioafetivo", area:"relacoes", title:"Metas 2026 — Sócio-afetivo", body:"Fortalecer cada vez mais os laços de amizade (Zé, Morais, Nando, Rada, Fê Santos, etc); fazer network; estar próximo de quem agrega; arrumar uma namorada (sem pressão)." },
+  { id:"metas2026_espiritual", area:"espiritual", title:"Metas 2026 — Espiritual", body:"Continuar frequentando alguma igreja/célula." },
+  { id:"metas2026_saude", area:"saude", title:"Metas 2026 — Saúde/Físico", body:"Manter a academia e melhorar o shape (quer ver o abdômen); se dedicar à corrida; procurar nutricionista e personal trainer; manter alimentação saudável; fortalecer o equilíbrio mental; manter o cuidado com os dentes." },
+  { id:"metas2026_financeiro", area:"financas", title:"Metas 2026 — Financeiro", body:"Trocar a moto por uma ADV verde 2023 com protetor; diminuir o custo de vida; acumular R$10 mil; entrar num financiamento ou consórcio de apartamento." },
+  { id:"metas2026_profissional", area:"trabalho", title:"Metas 2026 — Profissional", body:"Ser promovido para pleno; se dedicar mais a editar vídeos; aumentar a frequência de postagem em todas as redes (Instagram, TikTok, Kwai, YouTube); elevar os temas profissionais nas redes sociais; consolidar a Murus Seguros como fonte de renda." },
+  { id:"metas2026_intelecto", area:"aprendizado", title:"Metas 2026 — Intelecto", body:"Iniciar a pós-graduação; aumentar o hábito de leitura (mínimo 10 livros no ano)." },
+  { id:"metas2026_bens", area:"bens", title:"Metas 2026 — Bens Materiais", body:"Comprar uma TV de 50\" pro quarto; mesa 120x60 pra área profissional; cadeira presidente pra área profissional; comprar um videogame (PS5); comprar um notebook; vender o desktop." }
 ];
 
 const REL = [
@@ -950,7 +961,17 @@ const REL = [
   ["atmo","bi_comercial"], ["atmo","bi_operacional"], ["atmo","bi_gerencial"], ["atmo","bi_terral"], ["atmo","aprendizado"],
   ["bi_comercial","bi_operacional"], ["bi_operacional","bi_gerencial"], ["bi_gerencial","bi_terral"],
   ["murus","financas"],
-  ["gabriel","amigos"], ["gabriel","familia"], ["familia","irma"], ["irma","amigos"]
+  ["gabriel","amigos"], ["gabriel","familia"], ["familia","irma"], ["irma","amigos"],
+
+  ["voce1","ritual_metas"], ["ritual_metas","metas_longo"],
+  ["ritual_metas","metas2026_socioafetivo"], ["ritual_metas","metas2026_espiritual"],
+  ["ritual_metas","metas2026_saude"], ["ritual_metas","metas2026_financeiro"],
+  ["ritual_metas","metas2026_profissional"], ["ritual_metas","metas2026_intelecto"],
+  ["ritual_metas","metas2026_bens"],
+  ["metas2026_socioafetivo","amigos"], ["metas2026_socioafetivo","gabriel"],
+  ["metas2026_saude","saude"], ["metas2026_financeiro","financas"],
+  ["metas2026_profissional","atmo"], ["metas2026_profissional","murus"],
+  ["metas2026_intelecto","aprendizado"]
 ];
 
 /* ============ STATE ============ */
@@ -969,7 +990,19 @@ let rafId = null;
 function loadNotes(){
   try{
     const raw = localStorage.getItem("jarvis_notes");
-    if(raw){ const parsed = JSON.parse(raw); if(Array.isArray(parsed) && parsed.length) return parsed; }
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length){
+        // mescla notas novas do DEFAULT_NOTES (ex: atualização do Second Brain)
+        // que ainda não existem no que o usuário já tem salvo — preserva edições dele.
+        const existingIds = new Set(parsed.map(n => n.id));
+        const newOnes = DEFAULT_NOTES.filter(n => !existingIds.has(n.id));
+        if(!newOnes.length) return parsed;
+        const merged = parsed.concat(newOnes);
+        localStorage.setItem("jarvis_notes", JSON.stringify(merged));
+        return merged;
+      }
+    }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_NOTES));
 }
@@ -1182,7 +1215,7 @@ function buildSystemPrompt(){
   `Aqui está o SECOND BRAIN completo de ${CONFIG.address} — use esse contexto para personalizar toda resposta:\n`+
   buildSecondBrainText() +
   `\n\nPROTOCOLO DE MEMÓRIA VIVA: se ${CONFIG.address} revelar algo novo e duradouro sobre a vida dele (uma meta, um projeto, uma decisão, um fato pessoal), `+
-  `termine sua resposta com uma linha no formato EXATO [[SAVE:area|titulo|texto]], onde area é uma destas: metas, trabalho, projetos, financas, aprendizado, saude, relacoes, meta. `+
+  `termine sua resposta com uma linha no formato EXATO [[SAVE:area|titulo|texto]], onde area é uma destas: metas, trabalho, projetos, financas, aprendizado, saude, relacoes, espiritual, bens, meta. `+
   `Se já existir uma nota com esse título, ela será atualizada; senão nasce uma nova. Inclua essa linha somente quando houver algo realmente novo para guardar.`;
 }
 
