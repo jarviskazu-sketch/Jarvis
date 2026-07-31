@@ -799,6 +799,12 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <div id="antennaStatus" class="offlineNote">verificando a antena…</div>
 
     <div class="settingsSection">
+      <h4>🧠 SECOND BRAIN</h4>
+      <div class="toggleRow"><span>Salvar automaticamente o que eu falar/perguntar</span><input type="checkbox" id="liveMemoryToggle"></div>
+      <div class="settingsHelp">Desligado: suas conversas com o Jarvis não viram nota nenhuma — fica tudo temporário, ótimo pra testar sem sujar o Second Brain. Ligado: quando você contar algo novo e duradouro (meta, projeto, decisão), ele salva sozinho.</div>
+    </div>
+
+    <div class="settingsSection">
       <h4>📅 AGENDA</h4>
       <div class="settingsHelp">
         Cole o endereço secreto/ICS de cada agenda. Google: Google Agenda no computador → ⚙ Configurações → clique na agenda à esquerda → "Integrar agenda" → copie o "Endereço secreto em formato iCal".
@@ -1020,6 +1026,7 @@ let chosenVoice = null;
 let synapses = [];
 let rafId = null;
 let openArea = null;       // null = visão geral por área da vida; senão, id da área aberta no momento
+let liveMemoryEnabled = localStorage.getItem("jarvis_live_memory") === "1"; // desligado por padrão — testes não sujam o Second Brain
 
 function loadNotes(){
   try{
@@ -1248,9 +1255,11 @@ function buildSystemPrompt(){
   `como se estivesse conversando de voz com ele.\n\n`+
   `Aqui está o SECOND BRAIN completo de ${CONFIG.address} — use esse contexto para personalizar toda resposta:\n`+
   buildSecondBrainText() +
-  `\n\nPROTOCOLO DE MEMÓRIA VIVA: se ${CONFIG.address} revelar algo novo e duradouro sobre a vida dele (uma meta, um projeto, uma decisão, um fato pessoal), `+
-  `termine sua resposta com uma linha no formato EXATO [[SAVE:area|titulo|texto]], onde area é uma destas: metas, trabalho, projetos, financas, aprendizado, saude, relacoes, espiritual, bens, meta. `+
-  `Se já existir uma nota com esse título, ela será atualizada; senão nasce uma nova. Inclua essa linha somente quando houver algo realmente novo para guardar.`;
+  (liveMemoryEnabled
+    ? `\n\nPROTOCOLO DE MEMÓRIA VIVA: se ${CONFIG.address} revelar algo novo e duradouro sobre a vida dele (uma meta, um projeto, uma decisão, um fato pessoal), `+
+      `termine sua resposta com uma linha no formato EXATO [[SAVE:area|titulo|texto]], onde area é uma destas: metas, trabalho, projetos, financas, aprendizado, saude, relacoes, espiritual, bens, meta. `+
+      `Se já existir uma nota com esse título, ela será atualizada; senão nasce uma nova. Inclua essa linha somente quando houver algo realmente novo para guardar.`
+    : `\n\nMEMÓRIA VIVA DESLIGADA: nunca use o formato [[SAVE:...]] nem sugira salvar nada — o ${CONFIG.address} está só testando por enquanto, então não crie nem edite notas do Second Brain.`);
 }
 
 function setProviderTag(provider, model){
@@ -1287,7 +1296,8 @@ async function submitUserText(text){
     let savedNoteId = null;
     if(match){
       const [, area, title, body] = match;
-      savedNoteId = applySaveMemory(area.trim(), title.trim(), body.trim());
+      // trava de segurança: mesmo que a IA ignore a instrução, com o toggle desligado nada é salvo
+      if(liveMemoryEnabled) savedNoteId = applySaveMemory(area.trim(), title.trim(), body.trim());
       replyText = replyText.replace(saveRegex, "").trim();
     }
 
@@ -2882,6 +2892,7 @@ document.getElementById("gearBtn").addEventListener("click", () => {
   document.getElementById("digestAutoToggle").checked = digestSettings.triggerAuto;
   document.getElementById("economyToggle").checked = economyMode;
   document.getElementById("autoModeToggle").checked = autoMode;
+  document.getElementById("liveMemoryToggle").checked = liveMemoryEnabled;
   document.getElementById("settingsOverlay").classList.remove("hidden");
 });
 document.getElementById("closeSettingsBtn").addEventListener("click", () => {
@@ -2891,6 +2902,7 @@ document.getElementById("digestWeatherToggle").addEventListener("change", e => {
 document.getElementById("digestSpeakToggle").addEventListener("change", e => { digestSettings.speak=e.target.checked; saveDigestSettings(); });
 document.getElementById("digestAutoToggle").addEventListener("change", e => { digestSettings.triggerAuto=e.target.checked; saveDigestSettings(); });
 document.getElementById("economyToggle").addEventListener("change", e => { economyMode=e.target.checked; localStorage.setItem("jarvis_economy_mode", economyMode?"1":"0"); });
+document.getElementById("liveMemoryToggle").addEventListener("change", e => { liveMemoryEnabled=e.target.checked; localStorage.setItem("jarvis_live_memory", liveMemoryEnabled?"1":"0"); });
 document.getElementById("autoModeToggle").addEventListener("change", e => { autoMode=e.target.checked; localStorage.setItem("jarvis_auto_mode", autoMode?"1":"0"); });
 
 /* ============ PAINEL DE AGENTES (constelação) ============
