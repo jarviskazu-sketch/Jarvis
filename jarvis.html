@@ -151,6 +151,21 @@
   }
   #editorBox textarea{ min-height:90px; resize:vertical; }
   .editor-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
+
+  /* ---------- NOTE VIEW (leitura da nota ao clicar num tema) ---------- */
+  #noteViewOverlay{
+    position:fixed; inset:0; background:rgba(2,5,10,0.75); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  #noteViewBox{
+    background:var(--panel); border:1px solid #1c2740; border-radius:14px;
+    width:min(440px,94vw); padding:22px; display:flex; flex-direction:column; gap:12px;
+  }
+  .noteViewHead{ display:flex; align-items:center; gap:8px; }
+  .noteViewDot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .noteViewArea{ font-size:0.72rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+  #noteViewBox h3{ margin:0; font-size:1.15rem; letter-spacing:0.02em; }
+  #noteViewBox p{ margin:0; font-size:0.92rem; line-height:1.6; color:var(--text); white-space:pre-wrap; }
   .btn{ padding:9px 16px; border-radius:8px; cursor:pointer; font-size:0.85rem; border:1px solid #1c2740; background:#0a1220; color:var(--text); }
   .btn.primary{ background:var(--theme); border-color:var(--theme); color:#001018; font-weight:700; }
   .btn.danger{ background:transparent; border-color:#7a2030; color:#ff6b6b; }
@@ -371,7 +386,7 @@ body::before{
   background-size: 26px 26px;
   mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, #000 30%, transparent 80%);
 }
-#bootScreen, #activationScreen, #app, #editorOverlay, #settingsOverlay{ position: relative; z-index: 1; }
+#bootScreen, #activationScreen, #app, #editorOverlay, #settingsOverlay, #noteViewOverlay{ position: relative; z-index: 1; }
 
 /* ---- boot screen ---- */
 #bootScreen{
@@ -471,8 +486,8 @@ section.brain{
 .legend .injected{ font-weight: 600; }
 
 /* ---- note editor / settings modals (glass) ---- */
-#editorOverlay, #settingsOverlay{ backdrop-filter: blur(6px); animation: fadeIn .2s var(--ease); }
-#editorBox, #settingsBox{
+#editorOverlay, #settingsOverlay, #noteViewOverlay{ backdrop-filter: blur(6px); animation: fadeIn .2s var(--ease); }
+#editorBox, #settingsBox, #noteViewBox{
   background: var(--card-strong) !important; backdrop-filter: blur(22px) saturate(140%);
   border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
   box-shadow: 0 26px 60px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05) !important;
@@ -756,6 +771,21 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
         <button class="btn" id="cancelEditBtn">Cancelar</button>
         <button class="btn primary" id="saveNoteBtn">Salvar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="noteViewOverlay" class="hidden">
+  <div id="noteViewBox">
+    <div class="noteViewHead">
+      <span class="noteViewDot" id="noteViewDot"></span>
+      <span class="noteViewArea" id="noteViewArea"></span>
+    </div>
+    <h3 id="noteViewTitle"></h3>
+    <p id="noteViewBody"></p>
+    <div class="editor-actions">
+      <button class="btn" id="noteViewCloseBtn">Fechar</button>
+      <button class="btn primary" id="noteViewEditBtn">✏ Editar</button>
     </div>
   </div>
 </div>
@@ -1554,7 +1584,7 @@ function renderAreaExpanded(container, W, H, cx, cy, areas, area){
   container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${graphStyle()}${graphDefs()}${raysHtml}${edgesHtml}${otherAreasHtml}${nodesHtml}${hubHtml}<g id="synapseLayer"></g></svg>`;
 
   container.querySelectorAll(".graphNode").forEach(g => {
-    g.addEventListener("click", () => openEditor(g.getAttribute("data-id")));
+    g.addEventListener("click", () => openNoteView(g.getAttribute("data-id")));
   });
   container.querySelectorAll(".areaNode[data-area]").forEach(g => {
     g.addEventListener("click", () => { openArea = g.getAttribute("data-area"); renderGraph(); });
@@ -1653,6 +1683,27 @@ function openEditor(id){
   overlay.classList.remove("hidden");
 }
 function closeEditor(){ document.getElementById("editorOverlay").classList.add("hidden"); editingId = null; }
+
+/* ============ NOTE VIEW (clicar no tema mostra a nota) ============ */
+let viewingId = null;
+function openNoteView(id){
+  const note = notes.find(n => n.id === id);
+  if(!note) return;
+  viewingId = id;
+  const area = AREA[note.area] || AREA.meta;
+  document.getElementById("noteViewDot").style.background = area.color;
+  document.getElementById("noteViewArea").textContent = area.label;
+  document.getElementById("noteViewTitle").textContent = note.title;
+  document.getElementById("noteViewBody").textContent = note.body;
+  document.getElementById("noteViewOverlay").classList.remove("hidden");
+}
+function closeNoteView(){ document.getElementById("noteViewOverlay").classList.add("hidden"); viewingId = null; }
+document.getElementById("noteViewCloseBtn").addEventListener("click", closeNoteView);
+document.getElementById("noteViewEditBtn").addEventListener("click", () => {
+  const id = viewingId;
+  closeNoteView();
+  openEditor(id);
+});
 
 document.getElementById("addNoteBtn").addEventListener("click", () => openEditor(null));
 document.getElementById("cancelEditBtn").addEventListener("click", closeEditor);
