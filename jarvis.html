@@ -986,6 +986,7 @@ let voices = [];
 let chosenVoice = null;
 let synapses = [];
 let rafId = null;
+let openArea = null;       // null = visão geral por área da vida; senão, id da área aberta no momento
 
 function loadNotes(){
   try{
@@ -1347,35 +1348,15 @@ function showError(msg){
   setTimeout(() => { if(banner.parentNode) banner.parentNode.removeChild(banner); }, 6000);
 }
 
-/* ============ SECOND BRAIN GRAPH ============ */
-function connectionCount(id){
-  return REL.filter(([a,b]) => a===id || b===id).length +
-         notes.filter(n2 => customRelCount(id)).length; // placeholder no-op
+/* ============ SECOND BRAIN GRAPH ============
+   Dois níveis: visão geral (um "pensamento" por área da vida, como no
+   PPT de metas) e, ao clicar numa área, ela abre e mostra as notas de
+   dentro dela — clicar de novo no núcleo fecha e volta pra visão geral. */
+function usedAreas(){
+  return Object.keys(AREA).filter(a => notes.some(n => n.area === a));
 }
-function customRelCount(){ return false; }
-
-function renderGraph(){
-  const container = document.getElementById("graphContainer");
-  const W = 1000, H = 540, cx = W/2, cy = H/2;
-  const n = notes.length;
-  const rx = Math.min(400, 180 + n*8);
-  const ry = Math.min(210, 110 + n*4);
-
-  const pos = {};
-  notes.forEach((note, i) => {
-    const angle = (i / Math.max(n,1)) * Math.PI * 2 - Math.PI/2;
-    pos[note.id] = { x: cx + rx*Math.cos(angle), y: cy + ry*Math.sin(angle), note };
-  });
-
-  const relCount = {};
-  REL.forEach(([a,b]) => {
-    if(pos[a] && pos[b]){
-      relCount[a] = (relCount[a]||0)+1;
-      relCount[b] = (relCount[b]||0)+1;
-    }
-  });
-
-  let defs = '<defs>'+
+function graphDefs(){
+  return '<defs>'+
     '<radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">'+
       '<stop offset="0%" stop-color="'+CONFIG.themeColor+'" stop-opacity="1"/>'+
       '<stop offset="60%" stop-color="'+CONFIG.themeColor+'" stop-opacity="0.5"/>'+
@@ -1390,46 +1371,9 @@ function renderGraph(){
       '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
     '</filter>'+
   '</defs>';
-
-  let edgesHtml = "";
-  const curves = [];
-  REL.forEach(([a,b], idx) => {
-    const pa = pos[a], pb = pos[b];
-    if(!pa || !pb) return;
-    const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
-    const ctrlX = mx + (cx - mx)*0.35;
-    const ctrlY = my + (cy - my)*0.35;
-    const pathId = "edge_"+idx;
-    curves.push({ id: pathId, A: pa, B: pb, C: {x:ctrlX,y:ctrlY} });
-    edgesHtml += `<path id="${pathId}" d="M ${pa.x} ${pa.y} Q ${ctrlX} ${ctrlY} ${pb.x} ${pb.y}" `+
-      `fill="none" stroke="url(#edgeGrad)" stroke-width="1.2" opacity="0.45" `+
-      `stroke-dasharray="6 6" class="flowline"/>`;
-  });
-
-  let raysHtml = "";
-  notes.forEach(note => {
-    const p = pos[note.id];
-    const color = (AREA[note.area]||AREA.meta).color;
-    raysHtml += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${color}" stroke-width="0.6" opacity="0.18"/>`;
-  });
-
-  let nodesHtml = "";
-  notes.forEach(note => {
-    const p = pos[note.id];
-    const color = (AREA[note.area]||AREA.meta).color;
-    const conns = relCount[note.id] || 1;
-    const r = 14 + Math.min(conns, 8)*1.8;
-    nodesHtml += `<g class="graphNode" data-id="${note.id}" style="cursor:pointer;">`+
-      `<circle cx="${p.x}" cy="${p.y}" r="${r+6}" fill="none" stroke="${color}" stroke-width="1" opacity="0.35" class="breathe"/>`+
-      `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" opacity="0.9" filter="url(#glow)"/>`+
-      `<text x="${p.x}" y="${p.y + r + 16}" text-anchor="middle" font-size="11" fill="#dfe8f5" font-family="inherit">${escapeXml(note.title)}</text>`+
-      `</g>`;
-  });
-
-  const coreHtml = `<circle cx="${cx}" cy="${cy}" r="34" fill="url(#coreGrad)" class="core-pulse"/>`+
-    `<text x="${cx}" y="${cy+7}" text-anchor="middle" font-size="24">🧠</text>`;
-
-  const style = `<style>
+}
+function graphStyle(){
+  return `<style>
     @keyframes dashmove{ to{ stroke-dashoffset:-120; } }
     .flowline{ animation: dashmove 4s linear infinite; }
     @keyframes breathe{ 0%,100%{ opacity:0.2; transform-origin:center; transform:scale(0.95);} 50%{ opacity:0.55; transform:scale(1.08);} }
@@ -1439,16 +1383,185 @@ function renderGraph(){
     .node-blink circle{ animation: blinkNode 0.5s ease-in-out 4; }
     @keyframes blinkNode{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(2.4);} }
   </style>`;
+}
 
-  const svgStr = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${style}${defs}${raysHtml}${edgesHtml}${nodesHtml}${coreHtml}<g id="synapseLayer"></g></svg>`;
-  container.innerHTML = svgStr;
+function renderGraph(){
+  const container = document.getElementById("graphContainer");
+  const W = 1000, H = 540, cx = W/2, cy = H/2;
+  const areas = usedAreas();
+  if(openArea && !areas.includes(openArea)) openArea = null; // área ficou sem notas (todas apagadas)
+
+  if(!openArea) renderAreaOverview(container, W, H, cx, cy, areas);
+  else renderAreaExpanded(container, W, H, cx, cy, areas, openArea);
+
+  updateBrainCount();
+  renderLegend();
+}
+
+/* visão geral: um "pensamento" por área da vida, do jeito que estava separado no PPT de metas */
+function renderAreaOverview(container, W, H, cx, cy, areas){
+  const n = areas.length;
+  const rx = Math.min(380, 170 + n*20);
+  const ry = Math.min(200, 95 + n*12);
+
+  const pos = {};
+  areas.forEach((area, i) => {
+    const angle = (i / Math.max(n,1)) * Math.PI * 2 - Math.PI/2;
+    pos[area] = { x: cx + rx*Math.cos(angle), y: cy + ry*Math.sin(angle) };
+  });
+
+  // relações entre áreas = agregado das relações entre notas de áreas diferentes
+  const areaOf = {}; notes.forEach(nt => areaOf[nt.id] = nt.area);
+  const pairCount = {};
+  REL.forEach(([a,b]) => {
+    const aa = areaOf[a], bb = areaOf[b];
+    if(!aa || !bb || aa === bb) return;
+    const key = [aa,bb].sort().join("|");
+    pairCount[key] = (pairCount[key]||0) + 1;
+  });
+
+  let edgesHtml = "";
+  const curves = [];
+  Object.keys(pairCount).forEach((key, idx) => {
+    const [aa,bb] = key.split("|");
+    const pa = pos[aa], pb = pos[bb];
+    if(!pa || !pb) return;
+    const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
+    const ctrlX = mx + (cx-mx)*0.35, ctrlY = my + (cy-my)*0.35;
+    const pathId = "areaEdge_"+idx;
+    curves.push({ id: pathId, A: pa, B: pb, C: {x:ctrlX,y:ctrlY} });
+    const w = Math.min(3, 1 + pairCount[key]*0.4);
+    edgesHtml += `<path id="${pathId}" d="M ${pa.x} ${pa.y} Q ${ctrlX} ${ctrlY} ${pb.x} ${pb.y}" `+
+      `fill="none" stroke="url(#edgeGrad)" stroke-width="${w}" opacity="0.4" stroke-dasharray="6 6" class="flowline"/>`;
+  });
+
+  let raysHtml = "";
+  areas.forEach(area => {
+    const p = pos[area];
+    raysHtml += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${AREA[area].color}" stroke-width="0.6" opacity="0.18"/>`;
+  });
+
+  let nodesHtml = "";
+  areas.forEach(area => {
+    const p = pos[area];
+    const count = notes.filter(nt => nt.area === area).length;
+    const color = AREA[area].color;
+    const r = 22 + Math.min(count,10)*2.6;
+    nodesHtml += `<g class="areaNode" data-area="${area}" style="cursor:pointer;">`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r+7}" fill="none" stroke="${color}" stroke-width="1" opacity="0.35" class="breathe"/>`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" opacity="0.9" filter="url(#glow)"/>`+
+      `<text x="${p.x}" y="${p.y+4}" text-anchor="middle" font-size="14" fill="#0b0f1a" font-weight="700" font-family="inherit">${count}</text>`+
+      `<text x="${p.x}" y="${p.y + r + 17}" text-anchor="middle" font-size="12" fill="#dfe8f5" font-weight="600" font-family="inherit">${escapeXml(AREA[area].label)}</text>`+
+      `</g>`;
+  });
+
+  const coreHtml = `<circle cx="${cx}" cy="${cy}" r="34" fill="url(#coreGrad)" class="core-pulse"/>`+
+    `<text x="${cx}" y="${cy+7}" text-anchor="middle" font-size="24">🧠</text>`;
+
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${graphStyle()}${graphDefs()}${raysHtml}${edgesHtml}${nodesHtml}${coreHtml}<g id="synapseLayer"></g></svg>`;
+
+  container.querySelectorAll(".areaNode").forEach(g => {
+    g.addEventListener("click", () => { openArea = g.getAttribute("data-area"); renderGraph(); });
+  });
+  setupSynapses(curves, container.querySelector("#synapseLayer"));
+}
+
+/* área aberta: mostra as notas de dentro dela; as outras áreas ficam
+   como pastilhas menores em volta, pra pular de uma pra outra sem
+   precisar voltar pro núcleo toda vez */
+function renderAreaExpanded(container, W, H, cx, cy, areas, area){
+  const inner = notes.filter(nt => nt.area === area);
+  const others = areas.filter(a => a !== area);
+  const areaOf = {}; notes.forEach(nt => areaOf[nt.id] = nt.area);
+
+  const n = inner.length;
+  const rx1 = Math.min(300, 130 + n*14), ry1 = Math.min(160, 75 + n*8);
+  const pos = {};
+  inner.forEach((note, i) => {
+    const angle = (i / Math.max(n,1)) * Math.PI * 2 - Math.PI/2;
+    pos[note.id] = { x: cx + rx1*Math.cos(angle), y: cy + ry1*Math.sin(angle) };
+  });
+
+  const m = others.length;
+  const rx2 = 430, ry2 = 235;
+  const areaPos = {};
+  others.forEach((a, i) => {
+    const angle = (i / Math.max(m,1)) * Math.PI * 2 - Math.PI/2;
+    areaPos[a] = { x: cx + rx2*Math.cos(angle), y: cy + ry2*Math.sin(angle) };
+  });
+
+  let edgesHtml = "";
+  const curves = [];
+  let edgeIdx = 0;
+  REL.forEach(([a,b]) => {
+    const pa = pos[a], pb = pos[b];
+    if(pa && pb){
+      // relação entre duas notas da própria área aberta
+      const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
+      const ctrlX = mx + (cx-mx)*0.35, ctrlY = my + (cy-my)*0.35;
+      const pathId = "expEdge_"+(edgeIdx++);
+      curves.push({ id: pathId, A: pa, B: pb, C: {x:ctrlX,y:ctrlY} });
+      edgesHtml += `<path id="${pathId}" d="M ${pa.x} ${pa.y} Q ${ctrlX} ${ctrlY} ${pb.x} ${pb.y}" `+
+        `fill="none" stroke="url(#edgeGrad)" stroke-width="1.2" opacity="0.45" stroke-dasharray="6 6" class="flowline"/>`;
+      return;
+    }
+    // relação cruzando pra outra área: liga a nota até a pastilha da área de fora
+    let noteId = null, otherArea = null;
+    if(pos[a] && areaOf[b] && areaOf[b] !== area){ noteId = a; otherArea = areaOf[b]; }
+    else if(pos[b] && areaOf[a] && areaOf[a] !== area){ noteId = b; otherArea = areaOf[a]; }
+    if(noteId && otherArea && areaPos[otherArea]){
+      const pa2 = pos[noteId], pb2 = areaPos[otherArea];
+      edgesHtml += `<path d="M ${pa2.x} ${pa2.y} L ${pb2.x} ${pb2.y}" fill="none" `+
+        `stroke="${AREA[otherArea].color}" stroke-width="1" opacity="0.3" stroke-dasharray="3 5"/>`;
+    }
+  });
+
+  let raysHtml = "";
+  inner.forEach(note => {
+    const p = pos[note.id];
+    raysHtml += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${AREA[area].color}" stroke-width="0.6" opacity="0.2"/>`;
+  });
+
+  let nodesHtml = "";
+  inner.forEach(note => {
+    const p = pos[note.id];
+    const color = AREA[area].color;
+    const r = 15;
+    nodesHtml += `<g class="graphNode" data-id="${note.id}" style="cursor:pointer;">`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r+6}" fill="none" stroke="${color}" stroke-width="1" opacity="0.35" class="breathe"/>`+
+      `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" opacity="0.9" filter="url(#glow)"/>`+
+      `<text x="${p.x}" y="${p.y + r + 16}" text-anchor="middle" font-size="11" fill="#dfe8f5" font-family="inherit">${escapeXml(note.title)}</text>`+
+      `</g>`;
+  });
+
+  let otherAreasHtml = "";
+  others.forEach(a => {
+    const p = areaPos[a];
+    const count = notes.filter(nt => nt.area === a).length;
+    otherAreasHtml += `<g class="areaNode" data-area="${a}" style="cursor:pointer;" opacity="0.55">`+
+      `<circle cx="${p.x}" cy="${p.y}" r="16" fill="${AREA[a].color}" opacity="0.6"/>`+
+      `<text x="${p.x}" y="${p.y+3}" text-anchor="middle" font-size="10" fill="#0b0f1a" font-weight="700">${count}</text>`+
+      `<text x="${p.x}" y="${p.y+29}" text-anchor="middle" font-size="10" fill="#9aa6bd">${escapeXml(AREA[a].label)}</text>`+
+      `</g>`;
+  });
+
+  const hubHtml = `<g class="areaHub" style="cursor:pointer;">`+
+    `<circle cx="${cx}" cy="${cy}" r="34" fill="url(#coreGrad)" class="core-pulse"/>`+
+    `<text x="${cx}" y="${cy+7}" text-anchor="middle" font-size="24">🧠</text>`+
+    `</g>`+
+    `<text x="${cx}" y="${cy+52}" text-anchor="middle" font-size="11" fill="${AREA[area].color}" font-weight="700">${escapeXml(AREA[area].label)} · voltar ↩</text>`;
+
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${graphStyle()}${graphDefs()}${raysHtml}${edgesHtml}${otherAreasHtml}${nodesHtml}${hubHtml}<g id="synapseLayer"></g></svg>`;
 
   container.querySelectorAll(".graphNode").forEach(g => {
     g.addEventListener("click", () => openEditor(g.getAttribute("data-id")));
   });
+  container.querySelectorAll(".areaNode[data-area]").forEach(g => {
+    g.addEventListener("click", () => { openArea = g.getAttribute("data-area"); renderGraph(); });
+  });
+  const hub = container.querySelector(".areaHub");
+  if(hub) hub.addEventListener("click", () => { openArea = null; renderGraph(); });
 
-  updateBrainCount();
-  renderLegend();
   setupSynapses(curves, container.querySelector("#synapseLayer"));
 }
 
@@ -1487,8 +1600,13 @@ function setupSynapses(curves, layer){
 }
 
 function blinkNode(id){
-  const g = document.querySelector(`.graphNode[data-id="${id}"]`);
-  if(g){ g.classList.add("node-blink"); setTimeout(()=>g.classList.remove("node-blink"), 2200); }
+  const note = notes.find(n => n.id === id);
+  if(note && openArea !== note.area){ openArea = note.area; renderGraph(); }
+  // espera o próximo frame pro nó existir no DOM (a área pode ter acabado de abrir) antes de piscar
+  requestAnimationFrame(() => {
+    const g = document.querySelector(`.graphNode[data-id="${id}"]`);
+    if(g){ g.classList.add("node-blink"); setTimeout(()=>g.classList.remove("node-blink"), 2200); }
+  });
 }
 
 function updateBrainCount(){
@@ -1502,7 +1620,9 @@ function renderLegend(){
     const info = AREA[a] || AREA.meta;
     return `<span><span class="dot" style="background:${info.color}"></span>${info.label}</span>`;
   }).join("");
-  html += `<span class="injected">✓ contexto injetado em todos os comandos do ${CONFIG.name}</span>`;
+  html += openArea
+    ? `<span class="injected">✓ contexto injetado em todos os comandos do ${CONFIG.name}</span>`
+    : `<span class="injected">👆 clique numa área pra abrir os pensamentos de dentro dela</span>`;
   document.getElementById("legend").innerHTML = html;
 }
 
@@ -1550,6 +1670,7 @@ document.getElementById("saveNoteBtn").addEventListener("click", () => {
   }
   saveNotes();
   closeEditor();
+  openArea = area; // abre a área da nota que acabou de salvar, pra ela aparecer na hora
   renderGraph();
 });
 
