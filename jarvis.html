@@ -152,6 +152,21 @@
   #editorBox textarea{ min-height:90px; resize:vertical; }
   .editor-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
 
+  /* ---------- ESTÚDIO DE CONTEÚDO ---------- */
+  .estudioSaida{
+    margin-top:14px; background:#0a1220; border:1px solid #1c2740; border-radius:12px;
+    padding:16px 18px; font-size:0.88rem; line-height:1.65; white-space:pre-wrap;
+    max-height:520px; overflow-y:auto;
+  }
+  .estudioSaida h4{ color:var(--theme); font-size:0.82rem; letter-spacing:0.06em; margin:14px 0 6px; }
+  .estudioSaida h4:first-child{ margin-top:0; }
+  .estudioSaida .aviso{ color:#ffd699; }
+  #vozPerfilBox .perfilChip{
+    display:inline-flex; align-items:center; gap:6px; background:rgba(34,195,255,.1);
+    border:1px solid rgba(34,195,255,.3); border-radius:999px; padding:4px 12px; font-size:0.76rem;
+  }
+  #estudioTabs .tabbtn{ font-size:0.78rem; }
+
   /* ---------- NOTE VIEW (leitura da nota, flutuante perto de onde clicou) ---------- */
   #noteViewOverlay{
     position:fixed; inset:0; background:transparent; z-index:200;
@@ -724,6 +739,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <button class="tabbtn" data-tab="news">📰 NOTÍCIAS</button>
     <button class="tabbtn" data-tab="digest">☀ DIGEST</button>
     <button class="tabbtn" data-tab="agents">🛰 AGENTES</button>
+    <button class="tabbtn" data-tab="estudio">✍ ESTÚDIO</button>
     <button class="tabbtn" data-tab="tokens" data-external="ai-token-control.html" title="Abre o painel AI Token Control em outra aba">🪙 TOKENS</button>
   </nav>
 
@@ -771,6 +787,55 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     </div>
     <div id="agentsConstellationWrap">
       <div id="agentsContent"></div>
+    </div>
+  </section>
+
+  <section class="panelWrap hidden" id="panel-estudio">
+    <div class="panelHead">
+      <div><h2>✍ ESTÚDIO DE CONTEÚDO</h2><span class="sub">roteiro na sua voz · pesquisa de concorrente por score</span></div>
+    </div>
+
+    <div class="tabbar" id="estudioTabs" style="padding:0 0 12px; border-top:none;">
+      <button class="tabbtn active" data-est="roteiro">🎬 ROTEIROS</button>
+      <button class="tabbtn" data-est="insta">📊 INSTAGRAM</button>
+    </div>
+
+    <div id="est-roteiro">
+      <div id="vozPerfilBox"></div>
+      <div class="field" style="margin-top:12px;">
+        <label id="roteiroLabel">REFERÊNCIA (post, thread, transcrição — pode colar vários)</label>
+        <textarea id="roteiroInput" style="min-height:120px;" placeholder="cole aqui a referência que você quer transformar em vídeo"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+        <button class="btn primary" id="roteiroBtn">▶ Gerar roteiro</button>
+        <button class="btn" id="vozResetBtn" title="Refazer o perfil de voz do zero">↺ Refazer meu perfil de voz</button>
+      </div>
+      <div id="roteiroSaida" class="estudioSaida hidden"></div>
+    </div>
+
+    <div id="est-insta" class="hidden">
+      <div class="settingsHelp">
+        Cole os dados dos concorrentes: um post por linha, no formato
+        <code>@perfil | formato | 1ª linha da legenda | likes | comentários | views</code>.
+        O Instagram bloqueia coleta automática, então o caminho que funciona é print/anotação manual.
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>DADOS DOS POSTS</label>
+        <textarea id="instaInput" style="min-height:140px;" placeholder="@concorrente | reel | Ninguém te conta isso sobre... | 1200 | 85 | 45000"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+        <div class="field" style="max-width:220px;"><label>SEU NICHO</label>
+          <input type="text" id="instaNicho" placeholder="ex: seguros para PMEs"></div>
+        <div class="field" style="max-width:200px;"><label>OBJETIVO</label>
+          <select id="instaObjetivo">
+            <option value="crescer seguidor">crescer seguidor</option>
+            <option value="gerar DM/venda">gerar DM/venda</option>
+            <option value="autoridade">autoridade</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn primary" id="instaBtn" style="margin-top:10px;">▶ Analisar</button>
+      <div id="instaSaida" class="estudioSaida hidden"></div>
     </div>
   </section>
 </div>
@@ -1944,7 +2009,10 @@ const AUTO_ROUTES = {
   conversa_simples:  ["cerebras", "groq", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
   conversa_complexa: ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
   triagem_email:      ["groq", "cerebras", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
-  digest:             ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"]
+  digest:             ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
+  /* Estúdio (roteiro/análise): tarefa longa e criativa, que ainda precisa
+     devolver JSON válido — por isso os modelos que escrevem melhor vêm antes. */
+  conteudo:           ["gemini", "anthropic", "openai", "mistral", "openrouter", "groq", "cerebras", "perplexity"]
 };
 let autoMode = localStorage.getItem("jarvis_auto_mode") !== "0"; // padrão ligado
 
@@ -2132,17 +2200,213 @@ function offlineNoteHTML(){
 
 /* ============ TABS ============ */
 function switchTab(tab){
-  document.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["agenda","emails","news","digest","agents"].forEach(t => {
+  document.querySelectorAll(".tabbtn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  ["agenda","emails","news","digest","agents","estudio"].forEach(t => {
     const p = document.getElementById("panel-"+t);
     if(p) p.classList.toggle("hidden", t !== tab);
   });
 }
-document.querySelectorAll(".tabbtn").forEach(btn => btn.addEventListener("click", () => {
+document.querySelectorAll(".tabbtn[data-tab]").forEach(btn => btn.addEventListener("click", () => {
   // abas externas (ex: 🪙 TOKENS) abrem outro arquivo em nova aba, sem trocar o painel atual
   if(btn.dataset.external){ window.open(btn.dataset.external, "_blank"); return; }
   switchTab(btn.dataset.tab);
+  if(btn.dataset.tab === "estudio") renderVozPerfil();
 }));
+
+/* ══════════════════════════════════════════════════════════════
+   ESTÚDIO DE CONTEÚDO — gerador de roteiros + pesquisa de Instagram.
+   Usa o mesmo callLLM do resto do Jarvis (mesma chave, mesmo roteamento
+   automático de provedor). Nada aqui fala em voz alta: é conteúdo pra
+   ler e copiar, não pra ouvir.
+   ══════════════════════════════════════════════════════════════ */
+let vozPerfil = loadJSON("jarvis_voz_perfil", null);
+
+document.querySelectorAll("#estudioTabs .tabbtn").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#estudioTabs .tabbtn").forEach(x => x.classList.toggle("active", x === b));
+    document.getElementById("est-roteiro").classList.toggle("hidden", b.dataset.est !== "roteiro");
+    document.getElementById("est-insta").classList.toggle("hidden", b.dataset.est !== "insta");
+  });
+});
+
+function renderVozPerfil(){
+  const box = document.getElementById("vozPerfilBox");
+  const label = document.getElementById("roteiroLabel");
+  const btn = document.getElementById("roteiroBtn");
+  if(vozPerfil){
+    box.innerHTML = `<span class="perfilChip">✓ perfil de voz salvo</span>
+      <span class="sub" style="margin-left:8px;">${escapeXml((vozPerfil.resumo||"").slice(0,90))}</span>`;
+    label.textContent = "REFERÊNCIA (post, thread, transcrição — pode colar vários)";
+    document.getElementById("roteiroInput").placeholder = "cole aqui a referência que você quer transformar em vídeo";
+    btn.textContent = "▶ Gerar roteiro";
+  } else {
+    box.innerHTML = `<div class="settingsHelp">Primeiro eu preciso aprender a <b>sua voz</b>.
+      Cole de 3 a 5 roteiros ou textos que você já escreveu — quanto mais, melhor.
+      Isso é feito <b>uma vez só</b>; depois é sempre direto ao roteiro.</div>`;
+    label.textContent = "SEUS TEXTOS (3 a 5, separados por linha em branco)";
+    document.getElementById("roteiroInput").placeholder = "cole aqui roteiros/textos que você já fez";
+    btn.textContent = "▶ Aprender minha voz";
+  }
+}
+
+function estudioSaida(el, html){
+  el.innerHTML = html;
+  el.classList.remove("hidden");
+}
+
+function semChaveAviso(){
+  return `<span class="aviso">⚠ Nenhuma chave de IA configurada.</span>\n\n` +
+         `Esta ferramenta precisa de um modelo pra interpretar e escrever — sem chave ela não tem como funcionar.\n\n` +
+         `Pegue uma grátis (sem cartão) em console.groq.com e cole em ⚙ → Motor & Economia.`;
+}
+
+/* ---------- gerador de roteiros ---------- */
+const PROMPT_VOZ = `Você analisa a escrita de uma pessoa pra extrair o PERFIL DE VOZ dela.
+Leia os textos e devolva SOMENTE um JSON:
+{"resumo":"uma frase que descreve a voz","abertura":"como ela costuma abrir","ritmo":"frases curtas/longas, pausas","fechamento":"como ela fecha","tom":{"ironia":0,"agressividade":0,"formalidade":0,"energia":0},"defende":"...","critica":"...","lexico_usa":["..."],"lexico_odeia":["..."],"tabus":["..."],"frases_exemplo":["..."]}
+Os valores de tom vão de 0 a 10. Baseie tudo no texto recebido, sem inventar.`;
+
+const PROMPT_ROTEIRO = `Você escreve roteiros de vídeo curto (Reels/TikTok) NA VOZ da pessoa.
+
+PERFIL DE VOZ DELA:
+{perfil}
+
+REGRAS INEGOCIÁVEIS:
+- O roteiro tem que soar como ELA, não como IA. Espelhe abertura, ritmo e palavras do perfil.
+- Use as palavras do "lexico_usa". NUNCA use as do "lexico_odeia". Respeite os "tabus".
+- Extraia a IDEIA da referência e escreva algo ORIGINAL. Nunca copie o texto.
+- Nunca invente número, data ou fato. Se não tiver certeza, marque [CONFERIR].
+- 90 a 160 palavras faladas (30-60s). Sem emoji, sem markdown, sem hashtag.
+
+Devolva SOMENTE JSON:
+{"texto_tela":"3-6 palavras","ganchos":[{"tipo":"paradoxo|acusação|número|história|promessa|data","texto":"..."}],"desenvolvimento":"...","punchline":"...","cta":"..."}
+Dê 3 ganchos, cada um de um arquétipo diferente.`;
+
+document.getElementById("roteiroBtn").addEventListener("click", async () => {
+  const el = document.getElementById("roteiroSaida");
+  const txt = document.getElementById("roteiroInput").value.trim();
+  if(!txt){ estudioSaida(el, "Cole alguma coisa primeiro."); return; }
+  if(!anyProviderHasKey()){ estudioSaida(el, semChaveAviso()); return; }
+
+  const btn = document.getElementById("roteiroBtn");
+  btn.disabled = true; btn.textContent = "pensando…";
+  estudioSaida(el, "Trabalhando… isso leva alguns segundos.");
+
+  try{
+    if(!vozPerfil){
+      const r = await callLLM({ system: PROMPT_VOZ, messages:[{role:"user", content: txt}],
+                                maxTokens: 1200, activity: "conteudo" });
+      if(!r.ok){ estudioSaida(el, "Falhou: " + r.errorMsg); return; }
+      const p = parseJSONdaIA(r.text);
+      if(!p){ estudioSaida(el, "A resposta veio fora do formato. Tente de novo."); return; }
+      vozPerfil = p; saveJSON("jarvis_voz_perfil", p);
+      renderVozPerfil();
+      document.getElementById("roteiroInput").value = "";
+      estudioSaida(el, renderPerfilHTML(p));
+    } else {
+      const sys = PROMPT_ROTEIRO.replace("{perfil}", JSON.stringify(vozPerfil));
+      const r = await callLLM({ system: sys, messages:[{role:"user", content: txt}],
+                                maxTokens: 1400, activity: "conteudo" });
+      if(!r.ok){ estudioSaida(el, "Falhou: " + r.errorMsg); return; }
+      const o = parseJSONdaIA(r.text);
+      estudioSaida(el, o ? renderRoteiroHTML(o, r) : escapeXml(r.text));
+    }
+  }catch(e){
+    estudioSaida(el, "Deu erro: " + e.message);
+  }finally{
+    // reconstrói o rótulo pelo ESTADO atual: se acabou de aprender a voz,
+    // o botão vira "Gerar roteiro". Restaurar o texto antigo aqui faria o
+    // botão continuar dizendo "Aprender minha voz" depois de já ter aprendido.
+    btn.disabled = false;
+    renderVozPerfil();
+  }
+});
+
+document.getElementById("vozResetBtn").addEventListener("click", () => {
+  if(!confirm("Apagar seu perfil de voz e aprender do zero?")) return;
+  vozPerfil = null; localStorage.removeItem("jarvis_voz_perfil");
+  renderVozPerfil();
+  document.getElementById("roteiroSaida").classList.add("hidden");
+});
+
+function parseJSONdaIA(t){
+  if(!t) return null;
+  const limpo = t.replace(/^```(?:json)?|```$/gm, "").trim();
+  const i = limpo.indexOf("{"), f = limpo.lastIndexOf("}");
+  if(i < 0 || f < 0) return null;
+  try{ return JSON.parse(limpo.slice(i, f+1)); }catch(e){ return null; }
+}
+
+function renderPerfilHTML(p){
+  const tom = p.tom || {};
+  return `<h4>PERFIL DE VOZ APRENDIDO</h4>${escapeXml(p.resumo||"")}
+<h4>COMO VOCÊ ABRE</h4>${escapeXml(p.abertura||"—")}
+<h4>RITMO</h4>${escapeXml(p.ritmo||"—")}
+<h4>TOM</h4>ironia ${tom.ironia??"—"}/10 · agressividade ${tom.agressividade??"—"}/10 · formalidade ${tom.formalidade??"—"}/10 · energia ${tom.energia??"—"}/10
+<h4>PALAVRAS QUE VOCÊ USA</h4>${escapeXml((p.lexico_usa||[]).join(", ")||"—")}
+<h4>NUNCA USAR</h4>${escapeXml((p.lexico_odeia||[]).join(", ")||"—")}
+<h4>PRÓXIMO PASSO</h4>Cole uma referência aí em cima e clique em "Gerar roteiro". Se algo aqui não parece você, clique em "Refazer meu perfil de voz".`;
+}
+
+function renderRoteiroHTML(o, r){
+  const ganchos = (o.ganchos||[]).map((g,i) =>
+    `${i+1}. [${escapeXml(g.tipo||"")}] ${escapeXml(g.texto||"")}`).join("\n");
+  return `<h4>TEXTO NA TELA</h4>${escapeXml(o.texto_tela||"—")}
+<h4>GANCHOS (escolha 1)</h4>${ganchos||"—"}
+<h4>DESENVOLVIMENTO</h4>${escapeXml(o.desenvolvimento||"—")}
+<h4>PUNCHLINE</h4>${escapeXml(o.punchline||"—")}
+<h4>CTA</h4>${escapeXml(o.cta||"—")}
+<h4>—</h4><span class="sub">via ${escapeXml(r.provider||"")} · ${escapeXml(r.model||"")}</span>`;
+}
+
+/* ---------- pesquisa de Instagram ---------- */
+const PROMPT_INSTA = `Você é analista de conteúdo de Instagram. Analise os posts de concorrentes por SCORE, nunca por achismo.
+
+MÉTODO:
+- Engajamento = salvamento/compartilhamento x3, comentário x2, like x1 (use o que houver).
+- Para cada perfil, calcule a MEDIANA POR FORMATO (reel, carrossel, imagem — nunca misture).
+- OUTLIER SCORE = engajamento do post ÷ mediana do MESMO formato do MESMO perfil. Foque em score >= 2.
+- COMMENT RATE = comentários ÷ (likes + comentários). Se >= 0,30 E a legenda pede comentário, marque GATE. Se >= 0,30 SEM CTA, marque POLÊMICA.
+- Derive de 5 a 8 TEMAS recorrentes do próprio material, sem lista fixa.
+
+REGRAS: use SOMENTE os números recebidos, nunca invente métrica. Se faltar dado, escreva "faltante".
+
+Devolva texto corrido em português, nesta ordem:
+TOP OUTLIERS (até 10, com o score à mostra e uma frase de por que performou)
+TEMAS QUE VENCEM / TEMAS SATURADOS
+FUNIS EXPOSTOS (quem usa comment-gate e sobre o quê)
+FORMATO VENCEDOR
+GANCHOS mais frequentes nos outliers
+LACUNAS (o que quase ninguém faz e tem espaço)
+3 A 5 IDEIAS priorizadas por payoff vs esforço
+ALERTAS (dados faltando, amostra pequena)`;
+
+document.getElementById("instaBtn").addEventListener("click", async () => {
+  const el = document.getElementById("instaSaida");
+  const dados = document.getElementById("instaInput").value.trim();
+  if(!dados){ estudioSaida(el, "Cole os dados dos posts primeiro."); return; }
+  if(!anyProviderHasKey()){ estudioSaida(el, semChaveAviso()); return; }
+
+  const btn = document.getElementById("instaBtn");
+  btn.disabled = true; btn.textContent = "analisando…";
+  estudioSaida(el, "Calculando medianas e scores…");
+  try{
+    const nicho = document.getElementById("instaNicho").value.trim() || "não informado";
+    const obj = document.getElementById("instaObjetivo").value;
+    const r = await callLLM({
+      system: PROMPT_INSTA,
+      messages: [{ role:"user", content: `Nicho: ${nicho}\nObjetivo: ${obj}\n\nPOSTS:\n${dados}` }],
+      maxTokens: 2000, activity: "conteudo"
+    });
+    estudioSaida(el, r.ok
+      ? escapeXml(r.text) + `\n\n— via ${r.provider} · ${r.model}`
+      : "Falhou: " + r.errorMsg);
+  }catch(e){
+    estudioSaida(el, "Deu erro: " + e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = "▶ Analisar";
+  }
+});
 
 /* ============ TEMPO / TIMEZONE ============ */
 function zonedWallClockToUtcMs(y,mo,d,h,mi,s,tzid){
