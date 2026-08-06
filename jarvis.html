@@ -749,6 +749,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
       <div><h2>📰 RADAR DE NOTÍCIAS</h2><span class="sub" id="newsSub"></span></div>
       <div class="actions"><button id="newsRefreshBtn" title="Atualizar">⟳</button></div>
     </div>
+    <div id="radarBoletim" class="hidden"></div>
     <div id="newsContent"></div>
   </section>
 
@@ -2557,6 +2558,45 @@ async function fetchNewsForTopic(topic, force){
     return items;
   }catch(e){ return cached ? cached.items : []; }
 }
+/* ============ BOLETIM DO RADAR (sistema em ~/RadarDeNoticias) ============
+   O Radar roda fora do Jarvis, agendado no Windows pras 07h, e deixa o
+   boletim pronto. Aqui a gente só mostra o que ele já produziu — sem buscar
+   nada na internet e sem gastar token. */
+async function fetchRadarBoletim(){
+  const box = document.getElementById("radarBoletim");
+  if(!box) return;
+  try{
+    const res = await fetch(ANTENNA_BASE + "/api/radar", { cache:"no-store" });
+    const d = await res.json();
+    if(!d.ok || !d.manchetes || !d.manchetes.length){ box.classList.add("hidden"); return; }
+
+    const quando = new Date(d.gerado_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+    const itens = d.manchetes.slice(0,7).map((m,i) =>
+      `<div class="eventRow" style="align-items:flex-start;">
+         <span style="color:var(--primary); font-weight:700; min-width:20px;">${i+1}</span>
+         <div style="flex:1;">
+           <a href="${escapeAttr(m.link)}" target="_blank" rel="noopener"
+              style="color:var(--txt); text-decoration:none;">${escapeXml(m.titulo)}</a>
+           <div class="sub" style="margin-top:2px;">${escapeXml(m.veiculo)} · score ${m.score}</div>
+         </div>
+       </div>`).join("");
+
+    box.innerHTML = `
+      <div class="digestCard" style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <b>🗞 BOLETIM DO DIA</b>
+          <span class="sub">${d.manchetes.length} notícias · gerado ${quando}${d.duracao ? " · áudio " + d.duracao : ""}</span>
+        </div>
+        ${itens}
+        ${d.audio ? `<audio controls preload="none" style="width:100%; margin-top:12px;"
+             src="${ANTENNA_BASE}/api/radar/audio"></audio>` : ""}
+      </div>`;
+    box.classList.remove("hidden");
+  }catch(e){
+    box.classList.add("hidden"); // antena offline: some, sem poluir a tela
+  }
+}
+
 async function fetchAllNews(force){
   const sub = document.getElementById("newsSub");
   if(sub) sub.textContent = newsTopics.join(" · ");
@@ -3251,7 +3291,7 @@ document.getElementById("agentsRefreshBtn").addEventListener("click", () => fetc
 /* ============ BOTÕES DOS PAINÉIS ============ */
 document.getElementById("agendaRefreshBtn").addEventListener("click", () => fetchAllCalendars());
 document.getElementById("emailsRefreshBtn").addEventListener("click", () => fetchAllEmailAccounts());
-document.getElementById("newsRefreshBtn").addEventListener("click", () => fetchAllNews(true));
+document.getElementById("newsRefreshBtn").addEventListener("click", () => { fetchAllNews(true); fetchRadarBoletim(); });
 document.getElementById("digestRunBtn").addEventListener("click", () => buildAndShowDigest(true));
 document.getElementById("digestSpeakBtn").addEventListener("click", () => {
   const txt = document.getElementById("digestCard").textContent;
@@ -3264,6 +3304,7 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
   renderAgendaPanel();
   renderEmailsPanel([]);
   fetchAllNews(false);
+  fetchRadarBoletim();
   if(antennaOnline){
     fetchAllCalendars();
     fetchAllEmailAccounts();

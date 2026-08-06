@@ -159,8 +159,7 @@ function writeAgentState(id, state) {
 function readAgentState(id) {
   const file = path.join(AGENT_STATE_DIR, id + ".json");
   try {
-    const raw = fs.readFileSync(file, "utf8");
-    return { data: JSON.parse(raw), error: null };
+    return { data: lerJSON(file), error: null };
   } catch (e) {
     if (e.code === "ENOENT") return { data: null, error: null };
     return { data: null, error: e.message };
@@ -260,12 +259,37 @@ const AGENT_DEFS = [
     isOff: (cfg) => !(cfg.calendars && cfg.calendars.length),
     offDetail: "desligado — adicione agendas em calendars no agents-config.json",
     run: runAgendaAgent
+  },
+  {
+    // Este roda FORA do Jarvis: é o sistema em ~/RadarDeNoticias, agendado no
+    // Windows pras 07:00. Ele mesmo grava a prova de vida em agent-state/,
+    // por isso aqui não há função run — quem dispara é o Agendador de Tarefas.
+    id: "radar-noticias",
+    nome: "Radar (boletim diário)",
+    icon: "🗞",
+    faz: "Monta o boletim do dia de energia e seguros, com áudio narrado, todo dia às 07h — mesmo com o Jarvis fechado.",
+    every_min: 24 * 60,
+    arquivo: "agent-state/radar-noticias.json",
+    isOff: () => !fs.existsSync(path.join(AGENT_STATE_DIR, "radar-noticias.json")),
+    offDetail: "ainda não rodou — agende com: radar agendar",
+    run: null
   }
 ];
 
+/* Lê JSON tolerando BOM. O PowerShell grava UTF-8 COM BOM por padrão, e o
+   JSON.parse do Node quebra no caractere invisível do começo do arquivo. */
+function lerJSON(caminho) {
+  let txt = fs.readFileSync(caminho, "utf8");
+  if (txt.charCodeAt(0) === 0xfeff) txt = txt.slice(1);
+  return JSON.parse(txt);
+}
+
 function computeAgentSnapshot(def, cfg) {
   const base = { id: def.id, nome: def.nome, icon: def.icon, faz: def.faz, every_min: def.every_min, arquivo: def.arquivo };
-  const runRef = { url: `/api/agents/${def.id}/run`, method: "POST" };
+  // Só expõe "rodar agora" se o agente REALMENTE tiver como ser disparado daqui.
+  // Sem esse check, um agente externo (que quem dispara é o Agendador do Windows)
+  // ganharia um botão que diz "concluído" sem ter executado nada.
+  const runRef = def.run ? { url: `/api/agents/${def.id}/run`, method: "POST" } : null;
 
   if (def.isOff(cfg)) {
     return { ...base, last: null, age_min: null, next_in_min: null, phase: null, state: "off", metric: "desligado", detail: def.offDetail, run: null };
@@ -659,6 +683,52 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: msg }));
       }
     });
+    return;
+  }
+
+  // Boletim do Radar de Notícias (o sistema em ~/RadarDeNoticias).
+  // Só lê o arquivo que o radar deixou — não busca nada na internet.
+  if (req.method === "GET" && parsedReq.pathname === "/api/radar") {
+    const arq = path.join(AGENT_STATE_DIR, "radar-boletim.json");
+    try {
+      const dados = lerJSON(arq);
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, ...dados }));
+    } catch (e) {
+      const semArquivo = e.code === "ENOENT";
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+      res.end(JSON.stringify({
+        ok: false,
+        error: semArquivo
+          ? "O Radar ainda não gerou boletim. Rode 'radar' na pasta ~/RadarDeNoticias."
+          : "não consegui ler o boletim: " + e.message
+      }));
+    }
+    return;
+  }
+
+  /* Entrega o áudio do boletim pro navegador poder tocar.
+     O arquivo mora fora daqui (~/RadarDeNoticias), e o navegador não abre
+     caminho de disco a partir de http://. Só serve o arquivo que o próprio
+     radar registrou — não aceita caminho vindo da URL, senão viraria uma
+     porta pra ler qualquer arquivo da máquina. */
+  if (req.method === "GET" && parsedReq.pathname === "/api/radar/audio") {
+    try {
+      const meta = lerJSON(path.join(AGENT_STATE_DIR, "radar-boletim.json"));
+      const arq = meta.audio;
+      if (!arq || !fs.existsSync(arq)) {
+        res.writeHead(404, corsHeaders());
+        res.end("boletim sem áudio ainda");
+        return;
+      }
+      const tipo = arq.toLowerCase().endsWith(".m4a") ? "audio/mp4" : "audio/wav";
+      const stat = fs.statSync(arq);
+      res.writeHead(200, { ...corsHeaders(), "content-type": tipo, "content-length": stat.size });
+      fs.createReadStream(arq).pipe(res);
+    } catch (e) {
+      res.writeHead(404, corsHeaders());
+      res.end("nenhum boletim gerado");
+    }
     return;
   }
 
