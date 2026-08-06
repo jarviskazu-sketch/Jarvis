@@ -2162,9 +2162,23 @@ let emailTriageCache   = loadJSON("jarvis_email_triage", {});
 let newsCache          = loadJSON("jarvis_news_cache", {});
 let weatherGeoCache     = loadJSON("jarvis_weather_geo", {});
 
-function saveCalendars(){ saveJSON("jarvis_calendars", calendars); }
+/* Manda agendas e temas pra antena também. Sem isso os AGENTES autônomos
+   (que rodam no servidor, sem navegador) nunca ficam sabendo do que você
+   configurou aqui — e o agente de agenda fica desligado pra sempre. */
+function sincronizarConfigAgentes(){
+  if(!antennaOnline) return;
+  fetch(ANTENNA_BASE + "/api/agents-config", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      calendars: calendars.filter(c => c.url).map(c => ({ nome: c.name, url: c.url })),
+      newsTopics: newsTopics
+    })
+  }).catch(() => {}); // antena offline não pode quebrar o salvamento local
+}
+
+function saveCalendars(){ saveJSON("jarvis_calendars", calendars); sincronizarConfigAgentes(); }
 function saveEmailAccounts(){ saveJSON("jarvis_emails", emailAccounts); }
-function saveNewsTopics(){ saveJSON("jarvis_news_topics", newsTopics); }
+function saveNewsTopics(){ saveJSON("jarvis_news_topics", newsTopics); sincronizarConfigAgentes(); }
 function saveDigestSettings(){ saveJSON("jarvis_digest_settings", digestSettings); }
 function saveEmailTriageCache(){ saveJSON("jarvis_email_triage", emailTriageCache); }
 function saveNewsCache(){ saveJSON("jarvis_news_cache", newsCache); }
@@ -2666,7 +2680,11 @@ async function fetchAllEmailAccounts(){
     try{
       const res = await fetch(ANTENNA_BASE + "/emails", {
         method:"POST", headers:{ "content-type":"application/json" },
-        body: JSON.stringify({ host: acc.host, usuario: acc.email, senhaApp: acc.appPassword, quantidade: 200 })
+        // O Google mostra a senha de app como "abcd efgh ijkl mnop". Se ela for
+        // colada com os espaços, o IMAP recusa com AUTHENTICATIONFAILED — que
+        // parece "senha errada" e faz a pessoa gerar outra à toa. Tiramos aqui.
+        body: JSON.stringify({ host: acc.host, usuario: (acc.email||"").trim(),
+                               senhaApp: (acc.appPassword||"").replace(/\s+/g, ""), quantidade: 200 })
       });
       const data = await res.json();
       if(!res.ok || data.error){
@@ -3570,6 +3588,7 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
   fetchAllNews(false);
   fetchRadarBoletim();
   if(antennaOnline){
+    sincronizarConfigAgentes(); // empurra o que já está configurado pros agentes
     fetchAllCalendars();
     fetchAllEmailAccounts();
   }

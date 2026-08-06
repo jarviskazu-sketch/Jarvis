@@ -538,6 +538,10 @@ function extractPlainText(bodyRaw, topContentType, topCTE) {
 }
 
 async function fetchEmailsIMAP(host, usuario, senhaApp, quantidade) {
+  // Defesa em profundidade: mesmo que o cliente esqueça, tira espaço da senha
+  // de app (o Google exibe em blocos de 4) e do usuário.
+  usuario = String(usuario || "").trim();
+  senhaApp = String(senhaApp || "").replace(/\s+/g, "");
   const client = new ImapClient(host);
   await client.connect();
   const loginResp = await client.cmd("LOGIN " + imapQuote(usuario) + " " + imapQuote(senhaApp));
@@ -729,6 +733,33 @@ const server = http.createServer((req, res) => {
       res.writeHead(404, corsHeaders());
       res.end("nenhum boletim gerado");
     }
+    return;
+  }
+
+  /* A interface salva agendas/temas no localStorage do navegador, mas os
+     AGENTES rodam aqui no servidor e leem do agents-config.json. Sem esta
+     rota o agente de agenda ficaria desligado pra sempre, mesmo com o painel
+     de Agenda funcionando — que era exatamente o que estava acontecendo. */
+  if (req.method === "POST" && parsedReq.pathname === "/api/agents-config") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 200000) req.destroy(); });
+    req.on("end", () => {
+      try {
+        const novo = JSON.parse(body);
+        const atual = loadAgentsConfig();
+        const cfg = {
+          newsTopics: Array.isArray(novo.newsTopics) ? novo.newsTopics : (atual.newsTopics || []),
+          calendars: Array.isArray(novo.calendars) ? novo.calendars : (atual.calendars || [])
+        };
+        fs.writeFileSync(AGENTS_CONFIG_PATH, JSON.stringify(cfg, null, 2));
+        console.log(`[agentes] config atualizada pela interface: ${cfg.calendars.length} agenda(s), ${cfg.newsTopics.length} tema(s)`);
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true, calendars: cfg.calendars.length, newsTopics: cfg.newsTopics.length }));
+      } catch (e) {
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    });
     return;
   }
 
