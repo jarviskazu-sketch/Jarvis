@@ -3719,6 +3719,11 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
     padding: 12px 14px; font-size:.72rem;
   }
   .face-panel h5{ font-size:.65rem; letter-spacing:.18em; color: var(--txt3,#6b7690); margin:0 0 8px; text-transform:uppercase; }
+  .face-agenda{ font-size:.72rem; line-height:1.5; overflow-y:auto; max-height:100%; }
+  .face-agenda .ev{ display:flex; gap:8px; margin-bottom:7px; }
+  .face-agenda .hh{ color: var(--primary,#22c3ff); font-variant-numeric: tabular-nums; flex-shrink:0; }
+  .face-agenda .tt{ color: var(--txt2,#aab6cc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .face-agenda .agora{ color: var(--accent,#8b5cf6); font-weight:600; }
   .face-vital-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-variant-numeric:tabular-nums; }
   .face-vital-row span:first-child{ width: 44px; color: var(--txt3,#6b7690); font-size:.62rem; letter-spacing:.06em; }
   .face-vital-bar{ flex:1; height:4px; background: rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
@@ -3777,6 +3782,9 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
       <div class="face-vital-row"><span>Áudio</span><div class="face-vital-bar"><i id="fvAudio"></i></div><span id="fvAudioN">—</span></div>
       <div class="face-vital-row"><span>Notas</span><div class="face-vital-bar"><i id="fvNotes"></i></div><span id="fvNotesN">—</span></div>
     </div>
+    <div class="face-panel" style="flex:1 1 auto; min-height:0;"><h5>Agenda de hoje</h5>
+      <div class="face-agenda" id="faceAgenda"><div style="color:var(--txt3,#6b7690);">—</div></div>
+    </div>
     <div class="face-panel"><h5>Status</h5>
       <div class="face-status-row"><span class="face-dot" id="fsAntenna"></span><span>Antena</span></div>
       <div class="face-status-row"><span class="face-dot" id="fsVoz"></span><span>Voz</span></div>
@@ -3786,7 +3794,10 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
 
   <div class="face-hud face-hud-right">
     <div class="face-panel"><h5>Logs</h5><div class="face-logs" id="faceLogs"></div></div>
-    <div class="face-panel"><h5>Feeds</h5><div class="face-feed" id="faceFeeds"><div style="color:var(--txt3,#6b7690);">aguardando sync…</div></div></div>
+    <div class="face-panel" style="flex:1 1 auto; min-height:0;"><h5>Feeds</h5><div class="face-feed" id="faceFeeds"><div style="color:var(--txt3,#6b7690);">aguardando sync…</div></div></div>
+    <div class="face-panel"><h5>Boletim do dia</h5>
+      <div class="face-feed" id="faceBoletim"><div style="color:var(--txt3,#6b7690);">—</div></div>
+    </div>
   </div>
 
   <div class="face-ticker" id="faceTicker">AGENDA HOJE <b>—</b> · E-MAILS AÇÃO <b>—</b> · NOTAS <b>—</b></div>
@@ -3989,7 +4000,66 @@ function pushLog(msg){
 }
 
 /* ---- feeds ---- */
+/* Agenda de hoje na FACE. Lê o que o painel de Agenda já renderizou, em vez
+   de buscar de novo — assim a FACE continua sendo só uma "cara" dos dados e
+   nunca gasta rede/token por conta própria. Se a agenda não carregou, mostra
+   um traço em vez de sumir. */
+function updateFaceAgenda(){
+  var el = document.getElementById("faceAgenda");
+  if(!el) return;
+  try{
+    var painel = document.getElementById("panel-agenda");
+    var linhas = painel ? painel.querySelectorAll(".eventRow") : [];
+    if(!linhas.length){
+      el.innerHTML = '<div style="color:var(--txt3,#6b7690);">sem eventos hoje</div>';
+      return;
+    }
+    // o painel agrupa por dia; só interessa o bloco antes do 2º rótulo de dia
+    var limite = linhas.length;
+    var rotulos = painel.querySelectorAll(".dayGroupLabel");
+    if(rotulos.length > 1){
+      var contados = 0;
+      for(var k=0;k<linhas.length;k++){
+        if(linhas[k].compareDocumentPosition(rotulos[1]) & Node.DOCUMENT_POSITION_PRECEDING) break;
+        contados++;
+      }
+      limite = contados || linhas.length;
+    }
+    var agoraTxt = new Date().toTimeString().slice(0,5);
+    var html = "";
+    for(var i=0;i<Math.min(8, limite);i++){
+      var hora = linhas[i].querySelector(".eventTime");
+      var tit = linhas[i].querySelector(".eventTitle");
+      if(!tit) continue;
+      var h = hora ? hora.textContent.trim() : "";
+      var passou = /^\d{2}:\d{2}$/.test(h) && h < agoraTxt;
+      html += '<div class="ev"><span class="hh' + (passou ? "" : " agora") + '">' +
+              (h || "—") + '</span><span class="tt">' + tit.textContent.trim().slice(0,34) + '</span></div>';
+    }
+    el.innerHTML = html || '<div style="color:var(--txt3,#6b7690);">sem eventos hoje</div>';
+  }catch(e){}
+}
+
+/* Manchetes do boletim que o Radar gerou (sistema em ~/RadarDeNoticias) */
+function updateFaceBoletim(){
+  var el = document.getElementById("faceBoletim");
+  if(!el) return;
+  try{
+    var box = document.getElementById("radarBoletim");
+    var links = box && !box.classList.contains("hidden") ? box.querySelectorAll("a") : [];
+    if(!links.length){ el.innerHTML = '<div style="color:var(--txt3,#6b7690);">sem boletim hoje</div>'; return; }
+    var html = "";
+    for(var i=0;i<Math.min(3, links.length);i++){
+      html += '<a href="' + links[i].getAttribute("href") + '" target="_blank" rel="noopener">' +
+              links[i].textContent.trim().slice(0,58) + '</a>';
+    }
+    el.innerHTML = html;
+  }catch(e){}
+}
+
 function updateFeeds(){
+  updateFaceAgenda();
+  updateFaceBoletim();
   var el = document.getElementById("faceFeeds");
   if(!el) return;
   try{
