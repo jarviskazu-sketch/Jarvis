@@ -201,7 +201,7 @@
     <button class="iconbtn" id="themeToggleBtn" title="Trocar tema">🌓 Tema</button>
     <button class="iconbtn" id="exportJsonBtn" title="Exportar tudo como JSON">⬇ Exportar</button>
     <button class="iconbtn" id="importJsonBtn" title="Importar JSON">⬆ Importar</button>
-    <input type="file" id="importJsonInput" accept="application/json" style="display:none;">
+    <input type="file" id="importJsonInput" accept="application/json" style="display:none;" aria-label="Escolher arquivo JSON de backup para importar">
   </div>
 </header>
 
@@ -294,7 +294,7 @@
       <div class="row" style="justify-content:space-between;">
         <h2 style="margin:0;">Uso detalhado</h2>
         <div class="row">
-          <input type="text" class="search-input" id="usageSearch" placeholder="🔎 buscar...">
+          <input type="text" class="search-input" id="usageSearch" placeholder="🔎 buscar..." aria-label="Buscar por projeto ou modelo">
           <button class="btn" id="exportCsvBtn">⬇ CSV</button>
         </div>
       </div>
@@ -511,7 +511,16 @@ function calcCost(model, inputTokens, outputTokens){
   return (inputTokens/1e6) * price.input + (outputTokens/1e6) * price.output;
 }
 function monthKey(dateStr){ return (dateStr||"").slice(0,7); } // "2026-07"
-function todayMonthKey(){ return new Date().toISOString().slice(0,7); }
+/* Data no formato "AAAA-MM-DD" no fuso LOCAL do usuário.
+   Importante: NÃO use toISOString() pra isso — ele devolve UTC, e no Brasil
+   (UTC-3) isso erra o dia entre 21h e meia-noite, e erra o mês na virada. */
+function localDateKey(d){
+  d = d || new Date();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+function todayMonthKey(){ return localDateKey().slice(0,7); }
 function daysInMonth(monthKey){
   const [y,m] = monthKey.split("-").map(Number);
   return new Date(y, m, 0).getDate();
@@ -659,22 +668,25 @@ function getFilteredUsage(){
   const modelF = document.getElementById("f-model").value;
   const projectF = document.getElementById("f-project").value;
   const now = new Date();
-  let fromDate = null, toDate = null;
+  /* Compara DATA COMO TEXTO ("AAAA-MM-DD"), que é exatamente como o uso é salvo.
+     Comparar com objetos Date aqui dava bug: new Date("2026-08-06") é meia-noite
+     UTC, enquanto o início do dia local no Brasil é 03:00 UTC — o registro de hoje
+     ficava "antes" do começo de hoje e o filtro devolvia vazio. Texto não tem fuso. */
+  let fromKey = null, toKey = null;
 
-  if(period === "today"){ fromDate = new Date(now.toDateString()); }
-  else if(period === "7d"){ fromDate = new Date(now.getTime()-7*86400000); }
-  else if(period === "30d"){ fromDate = new Date(now.getTime()-30*86400000); }
-  else if(period === "month"){ fromDate = new Date(now.getFullYear(), now.getMonth(), 1); }
+  if(period === "today"){ fromKey = localDateKey(now); }
+  else if(period === "7d"){ fromKey = localDateKey(new Date(now.getTime()-6*86400000)); }
+  else if(period === "30d"){ fromKey = localDateKey(new Date(now.getTime()-29*86400000)); }
+  else if(period === "month"){ fromKey = localDateKey(now).slice(0,7) + "-01"; }
   else if(period === "custom"){
-    const f = document.getElementById("f-from").value, t = document.getElementById("f-to").value;
-    if(f) fromDate = new Date(f);
-    if(t) toDate = new Date(t + "T23:59:59");
+    fromKey = document.getElementById("f-from").value || null; // já vem "AAAA-MM-DD"
+    toKey   = document.getElementById("f-to").value   || null;
   }
 
   return usageWithCost().filter(u => {
-    const d = new Date(u.date);
-    if(fromDate && d < fromDate) return false;
-    if(toDate && d > toDate) return false;
+    const d = (u.date || "");
+    if(fromKey && d < fromKey) return false;
+    if(toKey && d > toKey) return false;
     if(modelF && u.model !== modelF) return false;
     if(projectF && u.project !== projectF) return false;
     return true;
@@ -860,7 +872,7 @@ function renderSubsView(){
       ${willBust ? `<div class="hint" style="color:var(--yellow);">⚠ no ritmo atual, deve estourar antes do reset.</div>` : ""}
       <div class="actions">
         <button class="btn sm" data-inc="${sub.id}" data-n="1">+1</button>
-        <input type="number" min="1" value="10" id="n-${sub.id}">
+        <input type="number" min="1" value="10" id="n-${sub.id}" aria-label="Quantidade de ${unit} para somar em ${escapeHtml(sub.name)}">
         <button class="btn sm" data-incn="${sub.id}">+N</button>
         <button class="btn sm" data-reset="${sub.id}">Resetar ciclo</button>
         <button class="btn sm" data-edit="${sub.id}">Editar</button>
@@ -1010,7 +1022,7 @@ document.getElementById("usageForm").addEventListener("submit", (e) => {
   if(!model){ toast("Cadastre um modelo em ⚙️ Config antes."); return; }
   STATE.api.usage.push({
     id: uid("u"),
-    date: document.getElementById("u-date").value || new Date().toISOString().slice(0,10),
+    date: document.getElementById("u-date").value || localDateKey(),
     project: document.getElementById("u-project").value.trim() || "Sem projeto",
     model,
     inputTokens: Math.max(0, parseInt(document.getElementById("u-input").value,10) || 0),
@@ -1018,12 +1030,12 @@ document.getElementById("usageForm").addEventListener("submit", (e) => {
   });
   save();
   document.getElementById("usageForm").reset();
-  document.getElementById("u-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("u-date").value = localDateKey();
   renderApiView(); renderHome();
   toast("Uso registrado.");
   checkBudgetAlert();
 });
-document.getElementById("u-date").value = new Date().toISOString().slice(0,10);
+document.getElementById("u-date").value = localDateKey();
 
 /* filtros */
 ["f-period","f-model","f-project"].forEach(id => document.getElementById(id).addEventListener("change", () => {
