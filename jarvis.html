@@ -1218,7 +1218,7 @@ document.getElementById("micBtn").addEventListener("click", () => {
 });
 
 function normalize(s){
-  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 }
 
 function handleHeard(rawText){
@@ -1594,11 +1594,18 @@ function renderAreaExpanded(container, W, H, cx, cy, areas, area){
     raysHtml += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${AREA[area].color}" stroke-width="0.6" opacity="0.2"/>`;
   });
 
+  // nº de conexões de cada nota (dentro e fora da área) — hubs ficam maiores
+  const relCount = {};
+  REL.forEach(([a,b]) => {
+    if(pos[a]) relCount[a] = (relCount[a]||0)+1;
+    if(pos[b]) relCount[b] = (relCount[b]||0)+1;
+  });
+
   let nodesHtml = "";
   inner.forEach(note => {
     const p = pos[note.id];
     const color = AREA[area].color;
-    const r = 15;
+    const r = 12 + Math.min(relCount[note.id]||1, 8)*1.4;
     nodesHtml += `<g class="graphNode" data-id="${note.id}" style="cursor:pointer;">`+
       `<circle cx="${p.x}" cy="${p.y}" r="${r+6}" fill="none" stroke="${color}" stroke-width="1" opacity="0.35" class="breathe"/>`+
       `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" opacity="0.9" filter="url(#glow)"/>`+

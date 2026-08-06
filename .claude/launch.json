@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jarvis",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8899"],
+      "port": 8899
+    },
+    {
+      "name": "jarvis-antena",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 4242,
+      "url": "http://127.0.0.1:4242"
+    }
+  ]
+}
