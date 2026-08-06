@@ -1844,6 +1844,13 @@ const DEFAULT_DIGEST_SETTINGS = {
   weather:true, citiesPrimary:"Embu das Artes", citySecondary:"São Paulo",
   triggerAuto:true, triggerVoice:true, triggerButton:true, length:"curto", speak:true
 };
+
+/* De quanto em quanto tempo cada módulo se atualiza sozinho — 👈 EDITE AQUI.
+   NEWS_CACHE_MS também é o tempo que uma manchete fica em cache: enquanto não
+   vencer, o Jarvis reusa o que já tem em vez de bater de novo no Google News. */
+const AGENDA_REFRESH_MS = 10*60*1000; // 10 min
+const NEWS_CACHE_MS     = 30*60*1000; // 30 min
+const EMAIL_REFRESH_MS  = 15*60*1000; // 15 min
 /* provedores de IA suportados — Anthropic é pago por uso; Gemini e Groq têm
    camada gratuita (sem cartão), pra quem não quer colocar crédito na API */
 const PROVIDERS = {
@@ -2529,7 +2536,7 @@ function updateEmailBadges(){
 /* ============ NOTÍCIAS ============ */
 async function fetchNewsForTopic(topic, force){
   const cached = newsCache[topic];
-  if(!force && cached && (Date.now()-cached.ts) < 55*1000) return cached.items;
+  if(!force && cached && (Date.now()-cached.ts) < NEWS_CACHE_MS) return cached.items;
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
   try{
     const xmlText = await proxyFetchText(url);
@@ -3244,9 +3251,9 @@ document.getElementById("activateBtn").addEventListener("click", async () => {
   if(digestSettings.triggerAuto && localStorage.getItem("jarvis_last_digest") !== todayKey){
     setTimeout(() => { if(antennaOnline) buildAndShowDigest(digestSettings.speak); }, 4000);
   }
-  setInterval(() => { if(antennaOnline) fetchAllCalendars(); }, 60*1000);
-  setInterval(() => { if(antennaOnline) fetchAllNews(false); }, 60*1000);
-  setInterval(() => { if(antennaOnline) fetchAllEmailAccounts(); }, 5*60*1000);
+  setInterval(() => { if(antennaOnline) fetchAllCalendars(); }, AGENDA_REFRESH_MS);
+  setInterval(() => { if(antennaOnline) fetchAllNews(false); }, NEWS_CACHE_MS);
+  setInterval(() => { if(antennaOnline) fetchAllEmailAccounts(); }, EMAIL_REFRESH_MS);
   setInterval(() => { pingAntenna(); }, 30*1000);
 });
 
