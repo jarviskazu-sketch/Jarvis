@@ -932,7 +932,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
 
     <div class="settingsSection">
       <h4>⚙ MOTOR & ECONOMIA</h4>
-      <div class="settingsHelp">Escolha de qual provedor o Jarvis "pensa". Anthropic, Perplexity e OpenAI (ChatGPT) são pagas por uso; Gemini, Groq, Mistral, Cerebras e OpenRouter (modelos :free) têm camada gratuita sem cartão — bom pra quem não quer colocar crédito na API.</div>
+      <div class="settingsHelp">Escolha de qual provedor o Jarvis "pensa". Anthropic, Perplexity e OpenAI (ChatGPT) são pagas por uso; Gemini, Groq, Mistral, Cerebras, NVIDIA NIM e OpenRouter (modelos :free) têm camada gratuita sem cartão — bom pra quem não quer colocar crédito na API.</div>
       <label style="margin-bottom:6px;">PROVEDOR</label>
       <div class="modelChoices" id="providerChoices"></div>
       <div class="field" id="providerKeyField" style="margin-top:10px;">
@@ -985,6 +985,13 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
           1. Vá em <b>perplexity.ai/settings/api</b><br>
           2. Adicione um cartão e créditos (cobra por uso, sem teste grátis)<br>
           3. Gere a chave e cole aqui em cima. Só vale a pena se quiser respostas com busca na web em tempo real — pros demais casos prefira os provedores grátis acima
+        </div>
+        <div class="settingsHelp" style="margin-top:10px;">
+          <b style="color:var(--txt);">NVIDIA NIM — grátis, sem cartão (1.000 créditos/mês)</b><br>
+          1. Vá em <b>build.nvidia.com</b> e crie a conta gratuita de desenvolvedor<br>
+          2. Abra qualquer modelo do catálogo e clique em <b>Get API Key</b> (a chave começa com <code>nvapi-</code>)<br>
+          3. Copie e cole aqui em cima. Dá acesso a 100+ modelos rodando no DGX Cloud da NVIDIA<br>
+          <i>Obs: uso comercial de verdade (com clientes finais) pede licença NVIDIA AI Enterprise — pra uso pessoal, teste e desenvolvimento está liberado.</i>
         </div>
         <div class="settingsHelp" style="margin-top:10px;">
           <b style="color:var(--txt);">OpenAI (ChatGPT) — PAGO por uso (sem camada gratuita geral)</b><br>
@@ -1978,6 +1985,17 @@ const PROVIDERS = {
     keyHelp: "PAGO por uso, sem camada gratuita geral (só $5 de crédito único em contas novas) — platform.openai.com",
     openaiCompat: true, baseUrl: "https://api.openai.com/v1/chat/completions",
     models: { economico:"gpt-5-mini", equilibrado:"gpt-5.4", maximo:"gpt-5.5" }
+  },
+  nvidia: {
+    label: "NVIDIA NIM",
+    keyHelp: "grátis, sem cartão (1.000 créditos/mês, 100+ modelos) — build.nvidia.com, a chave começa com nvapi-",
+    keyKey: "nvidia_key",
+    openaiCompat: true, baseUrl: "https://integrate.api.nvidia.com/v1/chat/completions",
+    models: {
+      economico:  "meta/llama-3.1-8b-instruct",
+      equilibrado:"meta/llama-3.3-70b-instruct",
+      maximo:     "nvidia/llama-3.1-nemotron-70b-instruct"
+    }
   }
 };
 const TIER_LABELS = { economico:"ECONÔMICO", equilibrado:"EQUILIBRADO", maximo:"MÁXIMO" };
@@ -2006,13 +2024,13 @@ function allProviders(){
    Gemini tende a escrever melhor (bom pra pergunta complexa/digest).
    👈 EDITE AQUI pra mudar a prioridade. */
 const AUTO_ROUTES = {
-  conversa_simples:  ["cerebras", "groq", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
-  conversa_complexa: ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
-  triagem_email:      ["groq", "cerebras", "gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai"],
-  digest:             ["gemini", "mistral", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
+  conversa_simples:  ["cerebras", "groq", "gemini", "mistral", "nvidia", "openrouter", "anthropic", "perplexity", "openai"],
+  conversa_complexa: ["gemini", "mistral", "nvidia", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
+  triagem_email:      ["groq", "cerebras", "gemini", "mistral", "nvidia", "openrouter", "anthropic", "perplexity", "openai"],
+  digest:             ["gemini", "mistral", "nvidia", "openrouter", "anthropic", "perplexity", "openai", "groq", "cerebras"],
   /* Estúdio (roteiro/análise): tarefa longa e criativa, que ainda precisa
      devolver JSON válido — por isso os modelos que escrevem melhor vêm antes. */
-  conteudo:           ["gemini", "anthropic", "openai", "mistral", "openrouter", "groq", "cerebras", "perplexity"]
+  conteudo:           ["gemini", "anthropic", "openai", "mistral", "nvidia", "openrouter", "groq", "cerebras", "perplexity"]
 };
 let autoMode = localStorage.getItem("jarvis_auto_mode") !== "0"; // padrão ligado
 
