@@ -564,11 +564,18 @@ async function fetchEmailsIMAP(host, usuario, senhaApp, quantidade) {
   const n = Math.max(1, Math.min(quantidade || 20, 200));
   const from = Math.max(1, exists - n + 1);
   const to = exists;
+  // O verbo FETCH é obrigatório aqui: cmd() só prefixa a tag, então sem ele
+  // o servidor recebe "A3 1:20 (...)", responde BAD e nenhuma mensagem volta —
+  // dava login OK, caixa com mensagens, e mesmo assim zero e-mail na tela.
   const fetchResp = await client.cmd(
-    `${from}:${to} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.4000>)`
+    `FETCH ${from}:${to} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.4000>)`
   );
+  if (!/\sOK\b/i.test(fetchResp.resp)) {
+    console.log(`[antena] FETCH recusado (${host}): ${fetchResp.resp.slice(0, 200)}`);
+  }
   client.quit();
   const blocks = parseFetchBlocks(fetchResp.resp);
+  console.log(`[antena] ${host}: caixa com ${exists} mensagem(ns), ${blocks.length} lida(s) nesta rodada`);
   return blocks.map((b) => {
     const hLines = unfoldHeaders(b.headerRaw);
     const from_ = decodeMimeWords(getHeader(hLines, "From"));
