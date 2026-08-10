@@ -11,8 +11,30 @@ const https = require("https");
 const tls = require("tls");
 const fs = require("fs");
 const path = require("path");
+const { execFile } = require("child_process");
 
 const PORT = 4242;
+
+/* ============ SEGUNDO CÉREBRO ============
+   Memória persistente em D:\SEGUNDO-CEREBRO, alimentada pelos hooks do Claude Code.
+   O Jarvis não lê os arquivos do cofre direto: conversa com o CLI dele, que já
+   sabe pontuar relevância, respeitar o que é sensível e manter o índice. Assim
+   a regra de busca mora num lugar só. */
+const CEREBRO_BIN = path.join("D:", "SEGUNDO-CEREBRO", "_SISTEMA", "bin", "cerebro.mjs");
+const CEREBRO_AGENT_EVERY_MIN = 30;
+
+/* Chama o CLI do cérebro e devolve o JSON. Timeout curto: se o cérebro estiver
+   indisponível, o Jarvis segue funcionando sem ele — nunca trava por causa disso. */
+function chamarCerebro(args, cb) {
+  execFile("node", [CEREBRO_BIN, ...args], { timeout: 20000, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (err, stdout) => {
+    if (err) return cb(err);
+    try {
+      cb(null, JSON.parse(String(stdout).replace(/^\uFEFF/, "")));
+    } catch (e) {
+      cb(new Error("resposta do cerebro nao e JSON: " + e.message));
+    }
+  });
+}
 
 /* ============ AGENTES AUTÔNOMOS ============
    Processos que rodam sozinhos, sem pedido do navegador — diferente das
@@ -237,7 +259,42 @@ async function runAgendaAgent() {
   });
 }
 
+/* Vigia a saúde do segundo cérebro: quantas notas existem, se sobrou sessão por
+   destilar e se a credencial do CLI ainda vale. É o agente que avisa quando a
+   memória parou de ser escrita — falha que, sem isso, passaria despercebida. */
+async function runCerebroAgent() {
+  const dados = await new Promise((resolve, reject) => {
+    chamarCerebro(["resumo"], (err, json) => (err ? reject(err) : resolve(json)));
+  });
+
+  /* Semântica de monitor, não de tarefa: a consulta pode ter dado certo e ainda
+     assim o cérebro estar doente (credencial vencida, sessão empilhada na fila).
+     Nesse caso reportamos ok:false de propósito, para o painel acender — igual a
+     uma sonda que responde "alvo fora do ar" mesmo tendo executado sem falha.
+     Se o CLI do cérebro nem responder, o erro sobe pelo catch de quem chamou. */
+  writeAgentState("cerebro-sync", {
+    last_run: new Date().toISOString(),
+    ok: dados.ok === true,
+    detail: dados.detalhe,
+    count: dados.notas,
+    fila: dados.fila,
+    auth: dados.auth,
+    porArea: dados.porArea
+  });
+}
+
 const AGENT_DEFS = [
+  {
+    id: "cerebro-sync",
+    nome: "Segundo Cérebro",
+    icon: "🧠",
+    faz: "Vigia a memória em D:\\SEGUNDO-CEREBRO — total de notas, sessões esperando destilação e validade da credencial.",
+    every_min: CEREBRO_AGENT_EVERY_MIN,
+    arquivo: "agent-state/cerebro-sync.json",
+    isOff: () => !fs.existsSync(CEREBRO_BIN),
+    offDetail: "cérebro não encontrado em D:\\SEGUNDO-CEREBRO",
+    run: runCerebroAgent
+  },
   {
     id: "news-radar",
     nome: "Radar de Notícias",
@@ -666,31 +723,31 @@ const server = http.createServer((req, res) => {
       try {
         payload = JSON.parse(body);
       } catch (e) {
-        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: "json invalido" }));
         return;
       }
       const { host, usuario, senhaApp, quantidade } = payload || {};
       if (!host || !usuario || !senhaApp) {
-        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(400, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: "faltam campos (host, usuario, senhaApp)" }));
         return;
       }
       if (!isAllowedHost(host, ALLOWED_IMAP_HOSTS)) {
         console.log(`[antena] IMAP bloqueado — host nao permitido: ${host}`);
-        res.writeHead(403, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(403, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: "host IMAP nao liberado. adicione '" + host + "' em ALLOWED_IMAP_HOSTS no server.js." }));
         return;
       }
       console.log(`[antena] IMAP ${host} usuario=${maskEmail(usuario)} senha=${maskSecret()}`);
       try {
         const emails = await fetchEmailsIMAP(host, usuario, senhaApp, quantidade);
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ emails }));
       } catch (e) {
         const msg = e.message === "LOGIN_FAILED" ? loginFailedMessage(host) : "erro ao conectar no IMAP: " + e.message;
         console.log(`[antena] erro IMAP (${host}): ${e.message}`);
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: msg }));
       }
     });
@@ -703,11 +760,11 @@ const server = http.createServer((req, res) => {
     const arq = path.join(AGENT_STATE_DIR, "radar-boletim.json");
     try {
       const dados = lerJSON(arq);
-      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ ok: true, ...dados }));
     } catch (e) {
       const semArquivo = e.code === "ENOENT";
-      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({
         ok: false,
         error: semArquivo
@@ -760,10 +817,10 @@ const server = http.createServer((req, res) => {
         };
         fs.writeFileSync(AGENTS_CONFIG_PATH, JSON.stringify(cfg, null, 2));
         console.log(`[agentes] config atualizada pela interface: ${cfg.calendars.length} agenda(s), ${cfg.newsTopics.length} tema(s)`);
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ ok: true, calendars: cfg.calendars.length, newsTopics: cfg.newsTopics.length }));
       } catch (e) {
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ ok: false, error: e.message }));
       }
     });
@@ -780,7 +837,7 @@ const server = http.createServer((req, res) => {
       off: agents.filter((a) => a.state === "off" || a.state === "idle").length,
       pior: (agents.find((a) => a.state === "error") || agents.find((a) => a.state === "stale") || {}).id || null
     };
-    res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+    res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ ok: true, now: new Date().toISOString(), agents, resumo }));
     return;
   }
@@ -789,7 +846,7 @@ const server = http.createServer((req, res) => {
   if (runMatch) {
     const def = AGENT_DEFS.find((d) => d.id === runMatch[1]);
     if (!def) {
-      res.writeHead(404, { ...corsHeaders(), "content-type": "application/json" });
+      res.writeHead(404, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ ok: false, error: "agente nao encontrado" }));
       return;
     }
@@ -797,13 +854,40 @@ const server = http.createServer((req, res) => {
     def
       .run()
       .then(() => {
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ ok: true }));
       })
       .catch((e) => {
-        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json" });
+        res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ ok: false, error: e.message }));
       });
+    return;
+  }
+
+  /* Busca no segundo cérebro. Ex: /api/cerebro/buscar?q=comissao%20parceiro
+     Devolve as notas relacionadas com score, área e cor — a mesma pontuação que
+     o Claude Code usa no recall, então painel e agente enxergam a mesma coisa. */
+  if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/buscar") {
+    const q = (parsedReq.searchParams.get("q") || "").trim();
+    if (!q) {
+      res.writeHead(400, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ ok: false, error: "informe ?q=" }));
+      return;
+    }
+    chamarCerebro(["buscar", "--json", q], (err, json) => {
+      // charset explícito: as notas têm acento, e sem isso o cliente decodifica como ANSI
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(err ? JSON.stringify({ ok: false, error: err.message }) : JSON.stringify(json));
+    });
+    return;
+  }
+
+  /* Saúde do cérebro, sem esperar a próxima rodada do agente. */
+  if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/resumo") {
+    chamarCerebro(["resumo"], (err, json) => {
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(err ? JSON.stringify({ ok: false, error: err.message }) : JSON.stringify(json));
+    });
     return;
   }
 
@@ -825,6 +909,8 @@ server.listen(PORT, "127.0.0.1", () => {
   // agentes autônomos: primeira rodada logo após subir, depois no intervalo próprio de cada um
   setTimeout(() => runNewsAgent().catch((e) => console.log("[agentes] erro news-radar:", e.message)), 2000);
   setTimeout(() => runAgendaAgent().catch((e) => console.log("[agentes] erro agenda-sync:", e.message)), 2500);
+  setTimeout(() => runCerebroAgent().catch((e) => console.log("[agentes] erro cerebro-sync:", e.message)), 3000);
   setInterval(() => runNewsAgent().catch((e) => console.log("[agentes] erro news-radar:", e.message)), NEWS_AGENT_EVERY_MIN * 60 * 1000);
   setInterval(() => runAgendaAgent().catch((e) => console.log("[agentes] erro agenda-sync:", e.message)), AGENDA_AGENT_EVERY_MIN * 60 * 1000);
+  setInterval(() => runCerebroAgent().catch((e) => console.log("[agentes] erro cerebro-sync:", e.message)), CEREBRO_AGENT_EVERY_MIN * 60 * 1000);
 });
