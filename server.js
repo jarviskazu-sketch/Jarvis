@@ -36,6 +36,37 @@ function chamarCerebro(args, cb) {
   });
 }
 
+/* Manda algo para o cérebro registrar. Usa spawn porque o comando `anotar`
+   lê JSON do stdin — e assim o tamanho não esbarra no limite de linha de comando. */
+function registrarNoCerebro(entrada, fonte, cb) {
+  const { spawn } = require("child_process");
+  const p = spawn("node", [CEREBRO_BIN, "anotar", fonte], { windowsHide: true });
+  let saida = "";
+  p.stdout.on("data", (d) => (saida += d));
+  p.on("error", (e) => cb && cb(e));
+  p.on("close", () => cb && cb(null, saida.trim()));
+  p.stdin.end(JSON.stringify(entrada), "utf8");
+}
+
+/* Palavras vazias em pt-BR para achar o assunto do dia nas manchetes. */
+const STOP_MANCHETE = new Set(["para","com","que","uma","dos","das","por","como","mais","mas","não","nao","sobre","após","apos","entre","pelo","pela","seu","sua","ser","tem","vai","ainda","novo","nova","diz","veja","saiba","the","and","for"]);
+
+/* Extrai o assunto dominante de uma lista de manchetes. Não guarda as manchetes:
+   o que interessa ao cérebro é o TEMA que se repete, não a notícia do dia. */
+function assuntosDominantes(titulos, quantos) {
+  const freq = new Map();
+  for (const t of titulos) {
+    const palavras = String(t).toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ").split(/\s+/);
+    for (const w of palavras) {
+      if (w.length < 4 || STOP_MANCHETE.has(w)) continue;
+      freq.set(w, (freq.get(w) || 0) + 1);
+    }
+  }
+  return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, quantos);
+}
+
 /* ============ AGENTES AUTÔNOMOS ============
    Processos que rodam sozinhos, sem pedido do navegador — diferente das
    rotas acima (proxy/emails), que só existem quando alguém pede.
@@ -209,15 +240,43 @@ async function runNewsAgent() {
 
   let totalItems = 0;
   const failures = [];
+  const porTema = {};
+  const titulos = [];
+
   for (const topic of topics) {
     try {
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       const xml = await fetchTextPromise(url);
-      totalItems += (xml.match(/<item>/g) || []).length;
+      const itens = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+      totalItems += itens.length;
+      porTema[topic] = itens.length;
+      for (const it of itens) {
+        const m = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/.exec(it);
+        if (m) titulos.push(m[1].replace(/&amp;/g, "&").replace(/&quot;/g, '"'));
+      }
     } catch (e) {
       failures.push(topic + ": " + e.message);
     }
   }
+
+  const anterior = readAgentState("news-radar").data || {};
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  /* Uma vez por dia, o radar deixa registro no DIÁRIO do cérebro — nunca em notas.
+     A regra do cofre é "uma nota = um fato durável"; manchete não sobrevive a três
+     meses e viraria ruído no recall. O que fica é o assunto dominante do dia. */
+  if (anterior.ultimo_digest !== hoje && titulos.length) {
+    const assuntos = assuntosDominantes(titulos, 8).map(([p, n]) => `${p} (${n})`).join(", ");
+    const porTemaTxt = Object.entries(porTema).map(([t, n]) => `${t}: ${n}`).join(" · ");
+    registrarNoCerebro({
+      notas: [],
+      projeto: "Jarvis",
+      diario: `Radar de notícias — ${totalItems} manchetes em ${topics.length} temas (${porTemaTxt}).\nAssuntos dominantes: ${assuntos}.`
+    }, "jarvis-radar", (err) => {
+      if (err) console.log("[agentes] news-radar nao conseguiu registrar no cerebro:", err.message);
+    });
+  }
+
   const ok = failures.length < topics.length;
   writeAgentState("news-radar", {
     last_run: new Date().toISOString(),
@@ -225,9 +284,57 @@ async function runNewsAgent() {
     detail: failures.length
       ? `${totalItems} manchetes em ${topics.length - failures.length}/${topics.length} temas (falha: ${failures.join("; ")})`
       : `${totalItems} manchetes em ${topics.length} tema(s)`,
-    count: totalItems
+    count: totalItems,
+    ultimo_digest: titulos.length ? hoje : anterior.ultimo_digest
   });
 }
+
+/* ============ LEITURA DE ICS ============
+   Parser mínimo: desdobra linhas continuadas (o formato quebra em 75 colunas e
+   continua com espaço no início) e extrai só DTSTART e SUMMARY de cada VEVENT. */
+function desdobrarICS(texto) {
+  return String(texto).replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
+}
+
+function parseDataICS(valor) {
+  // formatos: 20260812T143000Z · 20260812T143000 · 20260812 (dia inteiro)
+  const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/.exec(String(valor).trim());
+  if (!m) return null;
+  const [, a, mes, d, h, min, s, z] = m;
+  const diaInteiro = !h;
+  const iso = `${a}-${mes}-${d}` + (diaInteiro ? "T00:00:00" : `T${h}:${min}:${s}`) + (z ? "Z" : "");
+  const data = new Date(iso);
+  return isNaN(data) ? null : { data, diaInteiro };
+}
+
+function extrairEventos(ics, nomeAgenda) {
+  const texto = desdobrarICS(ics);
+  const eventos = [];
+  const blocos = texto.split("BEGIN:VEVENT").slice(1);
+  for (const bloco of blocos) {
+    const corpo = bloco.split("END:VEVENT")[0];
+    const mDt = /^DTSTART[^:\n]*:(.+)$/m.exec(corpo);
+    const mSum = /^SUMMARY[^:\n]*:(.+)$/m.exec(corpo);
+    if (!mDt) continue;
+    const quando = parseDataICS(mDt[1]);
+    if (!quando) continue;
+    const titulo = (mSum ? mSum[1] : "(sem título)")
+      .replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\n/gi, " ").trim();
+    eventos.push({ agenda: nomeAgenda, titulo, inicio: quando.data.toISOString(), diaInteiro: quando.diaInteiro });
+  }
+  return eventos;
+}
+
+/* Rótulo seguro de uma agenda. NUNCA cair na URL: os feeds ICS são secretos —
+   quem tem o link lê a agenda inteira — e este texto vai para o estado em disco
+   e para a tela. Sem nome configurado, mostra só o host. */
+function rotuloAgenda(cal) {
+  if (cal.nome) return cal.nome;
+  if (cal.name) return cal.name;
+  try { return new URL(cal.url).hostname; } catch (e) { return "agenda sem nome"; }
+}
+
+const AGENDA_JANELA_DIAS = 14;
 
 async function runAgendaAgent() {
   const cfg = loadAgentsConfig();
@@ -240,21 +347,43 @@ async function runAgendaAgent() {
 
   let totalEvents = 0;
   const failures = [];
+  const proximos = [];
+  const agora = Date.now();
+  const limite = agora + AGENDA_JANELA_DIAS * 24 * 60 * 60 * 1000;
+
   for (const cal of calendars) {
+    const rotulo = rotuloAgenda(cal);
     try {
       const ics = await fetchTextPromise(cal.url);
       totalEvents += (ics.match(/BEGIN:VEVENT/g) || []).length;
+      for (const ev of extrairEventos(ics, rotulo)) {
+        const t = Date.parse(ev.inicio);
+        if (t >= agora && t <= limite) proximos.push(ev);
+      }
     } catch (e) {
-      failures.push((cal.name || cal.url) + ": " + e.message);
+      failures.push(rotulo + ": " + e.message);
     }
   }
+
+  proximos.sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio));
+
+  /* Compromissos da janela, para o segundo cérebro ler no início de cada sessão.
+     Fica AQUI, no Jarvis, e o cérebro só lê — não copia. Assim título de reunião
+     não vira nota nem entra no export do cofre. */
+  writeAgentState("agenda-proximos", {
+    gerado_em: new Date().toISOString(),
+    janela_dias: AGENDA_JANELA_DIAS,
+    total: proximos.length,
+    eventos: proximos.slice(0, 60)
+  });
+
   const ok = failures.length < calendars.length;
   writeAgentState("agenda-sync", {
     last_run: new Date().toISOString(),
     ok,
     detail: failures.length
       ? `${totalEvents} eventos, ${calendars.length - failures.length}/${calendars.length} agenda(s) ok (falha: ${failures.join("; ")})`
-      : `${totalEvents} eventos em ${calendars.length} agenda(s)`,
+      : `${totalEvents} eventos em ${calendars.length} agenda(s) · ${proximos.length} nos próximos ${AGENDA_JANELA_DIAS} dias`,
     count: totalEvents
   });
 }
@@ -883,6 +1012,17 @@ const server = http.createServer((req, res) => {
   }
 
   /* Saúde do cérebro, sem esperar a próxima rodada do agente. */
+  /* Grafo do cofre (notas + ligações), pro Jarvis desenhar igual ao Obsidian.
+     Quem monta é o CLI: as ligações moram no corpo das notas como [[wikilink]]
+     e resolvê-las aqui duplicaria a regra em dois lugares. */
+  if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/grafo") {
+    chamarCerebro(["grafo"], (err, json) => {
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(err ? JSON.stringify({ ok: false, error: err.message }) : JSON.stringify(json));
+    });
+    return;
+  }
+
   if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/resumo") {
     chamarCerebro(["resumo"], (err, json) => {
       res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });

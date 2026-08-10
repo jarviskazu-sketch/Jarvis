@@ -5,6 +5,11 @@
 *.pem
 secrets/
 
+# Conteúdo de agenda: títulos de reunião são dado pessoal e de terceiros.
+# Este arquivo é lido pelo segundo cérebro em tempo de execução, mas não deve
+# entrar no histórico do repositório.
+agent-state/agenda-proximos.json
+
 # Node
 node_modules/
 dist/

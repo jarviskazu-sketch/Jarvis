@@ -1,9 +1,21 @@
 {
   "newsTopics": [
-    "Tecnologia",
-    "Economia",
-    "Mercado livre de energia - GD",
-    "Inteligência Artificial"
+    "tecnologia",
+    "economia",
+    "mercado de energia"
   ],
-  "calendars": []
+  "calendars": [
+    {
+      "nome": "Pessoal",
+      "url": "https://calendar.google.com/calendar/u/0?cid=bWlhbXVydTI4QGdtYWlsLmNvbQ"
+    },
+    {
+      "nome": "Murus Seguros",
+      "url": "https://ical.titan.email/feed/8961107/niJbtdYJJUzQJgz6QU9XulKHsjft7UBB"
+    },
+    {
+      "nome": "Profissional Atmo",
+      "url": "https://outlook.office365.com/owa/calendar/8e8f5b8ac3894c4a8dbab20ea673488c@atmoenergia.com.br/90f9f934d17c490a937f23286316588415287230019343355642/calendar.ics"
+    }
+  ]
 }

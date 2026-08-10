@@ -152,37 +152,6 @@
   #editorBox textarea{ min-height:90px; resize:vertical; }
   .editor-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
 
-  /* ---------- GRAFO DO SEGUNDO CÉREBRO ---------- */
-  .cerebro-layout{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
-  .cerebro-grafo{ flex:1 1 520px; min-width:300px; }
-  .cerebro-side{ flex:0 0 300px; min-width:260px; }
-  #cerebroCanvas{ background:#070d18; border:1px solid #1c2740; border-radius:12px; overflow:hidden; }
-  #cerebroCanvas svg{ width:100%; height:auto; display:block; cursor:grab; }
-  #cerebroCanvas svg.arrastando{ cursor:grabbing; }
-  .cno{ cursor:pointer; }
-  .cno circle{ transition:opacity .15s; }
-  .cno text{ font-size:9px; fill:var(--muted); pointer-events:none; }
-  .cno.selecionado circle{ stroke:#fff; stroke-width:2; }
-  .cno.apagado{ opacity:.12; }
-  .caresta{ stroke:#2a3550; stroke-width:1; }
-  .caresta.viva{ stroke:var(--theme); stroke-width:1.6; opacity:.9; }
-  .caresta.apagada{ opacity:.06; }
-  .cerebro-detalhe{
-    background:#0a1220; border:1px solid #1c2740; border-radius:12px;
-    padding:16px; font-size:0.84rem; line-height:1.6; max-height:560px; overflow-y:auto;
-  }
-  .cerebro-detalhe h4{ margin:0 0 4px; font-size:1rem; color:var(--text); }
-  .cerebro-detalhe .area{ font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; }
-  .cerebro-detalhe .bloco{ margin-top:12px; }
-  .cerebro-detalhe .rot{ font-size:0.68rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
-  .cerebro-detalhe .chip{
-    display:inline-block; background:#0f1a2e; border:1px solid #1c2740; border-radius:999px;
-    padding:2px 9px; font-size:0.72rem; margin:3px 4px 0 0;
-  }
-  .cerebro-detalhe .lig{ display:block; color:var(--theme); cursor:pointer; margin-top:4px; font-size:0.8rem; }
-  .cerebro-detalhe .lig:hover{ text-decoration:underline; }
-  .cerebro-detalhe code{ font-size:0.72rem; color:var(--muted); word-break:break-all; }
-
   /* ---------- ESTÚDIO DE CONTEÚDO ---------- */
   .estudioSaida{
     margin-top:14px; background:#0a1220; border:1px solid #1c2740; border-radius:12px;
@@ -801,9 +770,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <button class="tabbtn" data-tab="news">📰 NOTÍCIAS</button>
     <button class="tabbtn" data-tab="digest">☀ DIGEST</button>
     <button class="tabbtn" data-tab="agents">🛰 AGENTES</button>
-    <button class="tabbtn" data-tab="cerebro">🧠 CÉREBRO</button>
     <button class="tabbtn" data-tab="estudio">✍ ESTÚDIO</button>
-    <button class="tabbtn" data-tab="cerebro">🧠 CÉREBRO</button>
     <button class="tabbtn" data-tab="tokens" data-external="ai-token-control.html" title="Abre o painel AI Token Control em outra aba">🪙 TOKENS</button>
   </nav>
 
@@ -841,46 +808,6 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <div id="digestContent"><div class="digestCard" id="digestCard">Diga "bom dia" ou clique em ▶ para gerar o briefing de hoje.</div></div>
     <div class="digestActions">
       <button class="btn" id="digestSpeakBtn">🔊 Ouvir de novo</button>
-    </div>
-  </section>
-
-  <!-- Busca no segundo cérebro (D:\SEGUNDO-CEREBRO). Não lê o cofre direto:
-       chama /api/cerebro/buscar, que repassa ao CLI do cérebro — a mesma
-       pontuação de relevância que o Claude Code usa no recall. -->
-  <section class="panelWrap hidden" id="panel-cerebro">
-    <div class="panelHead">
-      <div><h2>🧠 SEGUNDO CÉREBRO</h2><span class="sub" id="cerebroSub">memória de todos os projetos</span></div>
-      <div class="actions"><button id="cerebroRefreshBtn" title="Atualizar estado">⟳</button></div>
-    </div>
-
-    <div class="tabbar" id="cerebroTabs" style="padding:0 0 12px; border-top:none;">
-      <button class="tabbtn active" data-cb="grafo">🕸 GRAFO</button>
-      <button class="tabbtn" data-cb="busca">🔎 BUSCA</button>
-    </div>
-
-    <div id="cb-grafo">
-      <div class="cerebro-layout">
-        <div class="cerebro-grafo">
-          <input type="text" id="cerebroBusca" placeholder="🔎 filtrar notas no grafo..." style="margin-bottom:10px;">
-          <div id="cerebroCanvas"></div>
-          <div class="legend" id="cerebroLegenda"></div>
-        </div>
-        <div class="cerebro-side">
-          <div class="cerebro-detalhe" id="cerebroDetalhe">
-            <span class="sub">Clique numa nota pra ver o conteúdo. Arraste pra reorganizar.</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="cb-busca" class="hidden">
-      <div style="display:flex; gap:8px; margin-bottom:14px;">
-        <input id="cerebroQuery" type="text" placeholder="o que você quer lembrar? ex: comissão parceiro ouro"
-               style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.16);
-                      background:rgba(255,255,255,.04); color:inherit; font:inherit; outline:none;">
-        <button id="cerebroBuscarBtn" style="padding:10px 18px;">Buscar</button>
-      </div>
-      <div id="cerebroContent"></div>
     </div>
   </section>
 
@@ -2370,7 +2297,7 @@ function offlineNoteHTML(){
 /* ============ TABS ============ */
 function switchTab(tab){
   document.querySelectorAll(".tabbtn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["agenda","emails","news","digest","agents","cerebro","estudio"].forEach(t => {
+  ["agenda","emails","news","digest","agents","estudio"].forEach(t => {
     const p = document.getElementById("panel-"+t);
     if(p) p.classList.toggle("hidden", t !== tab);
   });
@@ -2380,79 +2307,7 @@ document.querySelectorAll(".tabbtn[data-tab]").forEach(btn => btn.addEventListen
   if(btn.dataset.external){ window.open(btn.dataset.external, "_blank"); return; }
   switchTab(btn.dataset.tab);
   if(btn.dataset.tab === "estudio") renderVozPerfil();
-  if(btn.dataset.tab === "cerebro"){ cerebroEstado(); fetchCerebroGrafo(); }
-  else{ stopCerebroLoop(); }
 }));
-
-/* ══════════════════════════════════════════════════════════════
-   SEGUNDO CÉREBRO — busca na memória persistente.
-   Toda a inteligência (pontuação, o que é sensível, índice) mora no CLI
-   do cérebro; aqui só mostramos o que a antena devolve. Cada nota traz a
-   cor da sua área, a mesma paleta do cofre no Obsidian.
-   ══════════════════════════════════════════════════════════════ */
-function cerebroEscapar(s){
-  return String(s == null ? "" : s)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-}
-
-async function cerebroEstado(){
-  const sub = document.getElementById("cerebroSub");
-  if(!sub) return;
-  try{
-    const res = await fetch(ANTENNA_BASE + "/api/cerebro/resumo");
-    const d = await res.json();
-    if(d && d.detalhe){
-      sub.textContent = d.detalhe;
-      sub.style.color = d.ok ? "" : "var(--red)";
-    }else{
-      sub.textContent = "cérebro não respondeu";
-    }
-  }catch(e){
-    sub.textContent = "ANTENA OFFLINE — rode node server.js";
-  }
-}
-
-async function cerebroBuscar(){
-  const campo = document.getElementById("cerebroQuery");
-  const alvo  = document.getElementById("cerebroContent");
-  if(!campo || !alvo) return;
-  const q = campo.value.trim();
-  if(!q){ alvo.innerHTML = '<div class="offlineNote">Digite o que você quer lembrar.</div>'; return; }
-
-  alvo.innerHTML = '<div class="offlineNote">Procurando na memória…</div>';
-  try{
-    const res = await fetch(ANTENNA_BASE + "/api/cerebro/buscar?q=" + encodeURIComponent(q));
-    const d = await res.json();
-    if(!d || !d.ok) throw new Error(d && d.error ? d.error : "resposta invalida");
-    if(!d.achados.length){
-      alvo.innerHTML = '<div class="offlineNote">Nada relacionado no cérebro ainda. Conforme você trabalha, ele aprende.</div>';
-      return;
-    }
-    alvo.innerHTML = d.achados.map(n => {
-      const tags = (n.tags || []).slice(0,6).map(t =>
-        '<span style="font-size:11px; opacity:.65; margin-right:8px;">#' + cerebroEscapar(t) + '</span>').join("");
-      return '<div style="border-left:4px solid ' + cerebroEscapar(n.cor) + '; background:rgba(255,255,255,.03);'
-           + ' border-radius:0 8px 8px 0; padding:12px 14px; margin-bottom:10px;">'
-           + '<div style="display:flex; justify-content:space-between; gap:12px; align-items:baseline;">'
-           + '<strong>' + cerebroEscapar(n.titulo) + '</strong>'
-           + '<span style="font-size:11px; opacity:.5; white-space:nowrap;">' + cerebroEscapar(n.rotulo) + ' · ' + n.score + '</span>'
-           + '</div>'
-           + (n.resumo ? '<div style="margin:6px 0 8px; opacity:.85;">' + cerebroEscapar(n.resumo) + '</div>' : "")
-           + tags
-           + '<div style="font-size:11px; opacity:.4; margin-top:8px;">' + cerebroEscapar(n.arquivo) + '</div>'
-           + '</div>';
-    }).join("");
-  }catch(e){
-    alvo.innerHTML = '<div class="offlineNote">ANTENA OFFLINE ou cérebro indisponível — rode <code>node server.js</code>.</div>';
-  }
-}
-
-document.getElementById("cerebroBuscarBtn")?.addEventListener("click", cerebroBuscar);
-document.getElementById("cerebroRefreshBtn")?.addEventListener("click", cerebroEstado);
-document.getElementById("cerebroQuery")?.addEventListener("keydown", (e) => {
-  if(e.key === "Enter") cerebroBuscar();
-});
 
 /* ══════════════════════════════════════════════════════════════
    ESTÚDIO DE CONTEÚDO — gerador de roteiros + pesquisa de Instagram.
@@ -2461,231 +2316,6 @@ document.getElementById("cerebroQuery")?.addEventListener("keydown", (e) => {
    ler e copiar, não pra ouvir.
    ══════════════════════════════════════════════════════════════ */
 let vozPerfil = loadJSON("jarvis_voz_perfil", null);
-
-/* ══════════════════════════════════════════════════════════════
-   GRAFO DO SEGUNDO CÉREBRO — espelha a tela do Obsidian.
-   Os dados vêm do CLI do cérebro (via antena), nunca dos .md direto:
-   quem resolve os [[wikilinks]] é ele, então a regra mora num lugar só.
-   Layout por simulação de forças escrita à mão — o projeto é sem
-   biblioteca, e com ~35 nós o custo é irrelevante.
-   ══════════════════════════════════════════════════════════════ */
-const CB_W = 900, CB_H = 560;
-let cbNos = [], cbArestas = [], cbAreas = {}, cbSel = null, cbFiltro = "";
-let cbRaf = null, cbAtivo = false, cbArrastando = null, cbStats = "";
-
-async function fetchCerebroGrafo(){
-  /* O subtítulo do painel é da SAÚDE do cérebro (cerebroEstado) — inclusive o
-     aviso de autenticação. As contas do grafo vão na legenda, senão os dois
-     escreviam no mesmo lugar e um apagava o outro. */
-  if(!antennaOnline){
-    document.getElementById("cerebroCanvas").innerHTML =
-      '<div class="offlineNote" style="margin:0;">ANTENA OFFLINE — rode <code>node server.js</code> pra ver o cérebro.</div>';
-    return;
-  }
-  try{
-    const d = await (await fetch(ANTENNA_BASE + "/api/cerebro/grafo")).json();
-    if(!d.ok) throw new Error(d.error || "resposta inválida");
-    cbAreas = d.areas || {};
-    cbArestas = d.arestas || [];
-    // posição inicial em círculo: a simulação parte daí e se organiza sozinha
-    cbNos = (d.nos || []).map((n, i, arr) => {
-      const ang = (i / arr.length) * Math.PI * 2;
-      return { ...n, x: CB_W/2 + Math.cos(ang)*220, y: CB_H/2 + Math.sin(ang)*180, vx:0, vy:0 };
-    });
-    cbStats = `${d.total} notas · ${d.ligacoes} ligações · ${d.orfas} sem conexão`;
-    desenharCerebro();
-    renderCerebroLegenda();
-    startCerebroLoop();
-  }catch(e){
-    document.getElementById("cerebroCanvas").innerHTML =
-      `<div class="offlineNote" style="margin:0;">Não consegui ler o cérebro: ${escapeXml(e.message)}</div>`;
-  }
-}
-
-/* Um passo da simulação: repulsão entre todos, mola nas ligações e uma
-   gravidade fraca pro centro pra nada escapar da tela. */
-function cerebroTick(){
-  if(!cbAtivo || document.hidden){ cbRaf = null; return; }
-  const REP = 5200, MOLA = 0.012, DIST = 90, GRAV = 0.006, ATRITO = 0.86;
-
-  for(let i=0;i<cbNos.length;i++){
-    const a = cbNos[i];
-    for(let j=i+1;j<cbNos.length;j++){
-      const b = cbNos[j];
-      let dx = b.x-a.x, dy = b.y-a.y;
-      let d2 = dx*dx + dy*dy;
-      if(d2 < 1) d2 = 1;
-      const d = Math.sqrt(d2);
-      const f = REP / d2;
-      const fx = (dx/d)*f, fy = (dy/d)*f;
-      a.vx -= fx; a.vy -= fy; b.vx += fx; b.vy += fy;
-    }
-    a.vx += (CB_W/2 - a.x) * GRAV;
-    a.vy += (CB_H/2 - a.y) * GRAV;
-  }
-  const porId = {}; cbNos.forEach(n => porId[n.id] = n);
-  for(const e of cbArestas){
-    const a = porId[e.de], b = porId[e.para];
-    if(!a || !b) continue;
-    const dx = b.x-a.x, dy = b.y-a.y;
-    const d = Math.max(1, Math.hypot(dx,dy));
-    const f = (d - DIST) * MOLA;
-    const fx = (dx/d)*f, fy = (dy/d)*f;
-    a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
-  }
-  for(const n of cbNos){
-    if(n === cbArrastando) continue; // nó preso ao dedo não sofre física
-    n.vx *= ATRITO; n.vy *= ATRITO;
-    n.x = Math.max(30, Math.min(CB_W-30, n.x + n.vx));
-    n.y = Math.max(24, Math.min(CB_H-24, n.y + n.vy));
-  }
-  posicionarCerebro();
-  cbRaf = requestAnimationFrame(cerebroTick);
-}
-function startCerebroLoop(){ cbAtivo = true; if(!cbRaf) cbRaf = requestAnimationFrame(cerebroTick); }
-function stopCerebroLoop(){ cbAtivo = false; if(cbRaf){ cancelAnimationFrame(cbRaf); cbRaf = null; } }
-
-function raioDoNo(n){ return 5 + Math.min(n.grau, 12) * 1.15; }
-
-function desenharCerebro(){
-  const wrap = document.getElementById("cerebroCanvas");
-  if(!cbNos.length){ wrap.innerHTML = '<div class="offlineNote" style="margin:0;">Cérebro sem notas ainda.</div>'; return; }
-  const arestas = cbArestas.map((e,i) =>
-    `<line class="caresta" id="cb-e-${i}" data-de="${e.de}" data-para="${e.para}"/>`).join("");
-  const nos = cbNos.map(n =>
-    `<g class="cno" id="cb-n-${escapeAttr(n.id)}" data-id="${escapeAttr(n.id)}">
-       <circle r="${raioDoNo(n).toFixed(1)}" fill="${n.cor}"/>
-       <text text-anchor="middle">${escapeXml(n.titulo.slice(0,26))}</text>
-     </g>`).join("");
-  wrap.innerHTML = `<svg viewBox="0 0 ${CB_W} ${CB_H}" xmlns="http://www.w3.org/2000/svg">${arestas}${nos}</svg>`;
-
-  wrap.querySelectorAll(".cno").forEach(g => {
-    g.addEventListener("click", (ev) => { ev.stopPropagation(); selecionarNota(g.dataset.id); });
-    g.addEventListener("pointerdown", (ev) => {
-      cbArrastando = cbNos.find(n => n.id === g.dataset.id);
-      wrap.querySelector("svg").classList.add("arrastando");
-      ev.preventDefault();
-    });
-  });
-  const svg = wrap.querySelector("svg");
-  svg.addEventListener("pointermove", (ev) => {
-    if(!cbArrastando) return;
-    const r = svg.getBoundingClientRect();
-    cbArrastando.x = (ev.clientX - r.left) / r.width * CB_W;
-    cbArrastando.y = (ev.clientY - r.top) / r.height * CB_H;
-    cbArrastando.vx = cbArrastando.vy = 0;
-  });
-  const soltar = () => { cbArrastando = null; svg.classList.remove("arrastando"); };
-  svg.addEventListener("pointerup", soltar);
-  svg.addEventListener("pointerleave", soltar);
-  svg.addEventListener("click", () => selecionarNota(null));
-  posicionarCerebro();
-}
-
-/* Só move os atributos — nunca reconstrói o SVG a 60fps */
-function posicionarCerebro(){
-  const porId = {}; cbNos.forEach(n => porId[n.id] = n);
-  for(const n of cbNos){
-    const g = document.getElementById("cb-n-" + n.id);
-    if(!g) continue;
-    g.setAttribute("transform", `translate(${n.x.toFixed(1)},${n.y.toFixed(1)})`);
-    const t = g.querySelector("text");
-    if(t) t.setAttribute("y", (raioDoNo(n) + 10).toFixed(1));
-  }
-  cbArestas.forEach((e,i) => {
-    const l = document.getElementById("cb-e-" + i);
-    const a = porId[e.de], b = porId[e.para];
-    if(!l || !a || !b) return;
-    l.setAttribute("x1", a.x.toFixed(1)); l.setAttribute("y1", a.y.toFixed(1));
-    l.setAttribute("x2", b.x.toFixed(1)); l.setAttribute("y2", b.y.toFixed(1));
-  });
-}
-
-/* Realce igual ao do Obsidian: a nota escolhida e as ligadas a ela ficam
-   acesas, o resto apaga. Com filtro de busca, apaga quem não casa. */
-function realcarCerebro(){
-  const ligados = new Set();
-  if(cbSel){
-    ligados.add(cbSel);
-    cbArestas.forEach(e => {
-      if(e.de === cbSel) ligados.add(e.para);
-      if(e.para === cbSel) ligados.add(e.de);
-    });
-  }
-  const f = normalize(cbFiltro);
-  cbNos.forEach(n => {
-    const g = document.getElementById("cb-n-" + n.id);
-    if(!g) return;
-    let apagado = false;
-    if(f) apagado = !normalize(n.titulo + " " + (n.resumo||"") + " " + (n.tags||[]).join(" ")).includes(f);
-    else if(cbSel) apagado = !ligados.has(n.id);
-    g.classList.toggle("apagado", apagado);
-    g.classList.toggle("selecionado", n.id === cbSel);
-  });
-  cbArestas.forEach((e,i) => {
-    const l = document.getElementById("cb-e-" + i);
-    if(!l) return;
-    const viva = cbSel && (e.de === cbSel || e.para === cbSel);
-    l.classList.toggle("viva", !!viva);
-    l.classList.toggle("apagada", !!(cbSel && !viva) || !!f);
-  });
-}
-
-function selecionarNota(id){
-  cbSel = (id && id !== cbSel) ? id : null;
-  realcarCerebro();
-  const el = document.getElementById("cerebroDetalhe");
-  if(!cbSel){
-    el.innerHTML = '<span class="sub">Clique numa nota pra ver o conteúdo. Arraste pra reorganizar.</span>';
-    return;
-  }
-  const n = cbNos.find(x => x.id === cbSel);
-  if(!n) return;
-  const vizinhos = cbArestas
-    .filter(e => e.de === cbSel || e.para === cbSel)
-    .map(e => (e.de === cbSel ? e.para : e.de))
-    .map(id2 => cbNos.find(x => x.id === id2)).filter(Boolean);
-
-  el.innerHTML = `
-    <div class="area" style="color:${n.cor}">${escapeXml(n.icone||"")} ${escapeXml(n.rotulo)}</div>
-    <h4>${escapeXml(n.titulo)}</h4>
-    ${n.resumo ? `<div class="bloco">${escapeXml(n.resumo)}</div>` : ""}
-    ${n.tags && n.tags.length ? `<div class="bloco"><div class="rot">Tags</div>${n.tags.map(t=>`<span class="chip">${escapeXml(t)}</span>`).join("")}</div>` : ""}
-    ${n.projetos && n.projetos.length ? `<div class="bloco"><div class="rot">Projetos</div>${n.projetos.map(p=>`<span class="chip">${escapeXml(p)}</span>`).join("")}</div>` : ""}
-    <div class="bloco"><div class="rot">Ligações (${vizinhos.length})</div>
-      ${vizinhos.length ? vizinhos.map(v=>`<span class="lig" data-ir="${escapeAttr(v.id)}">→ ${escapeXml(v.titulo)}</span>`).join("")
-                        : '<span class="sub">nenhuma — esta nota está isolada</span>'}
-    </div>
-    <div class="bloco"><div class="rot">Arquivo</div><code>${escapeXml(n.relativo)}</code></div>`;
-
-  el.querySelectorAll("[data-ir]").forEach(b =>
-    b.addEventListener("click", () => selecionarNota(b.dataset.ir)));
-}
-
-function renderCerebroLegenda(){
-  const usadas = [...new Set(cbNos.map(n => n.area))];
-  document.getElementById("cerebroLegenda").innerHTML =
-    usadas.map(a => {
-      const info = cbAreas[a] || { rotulo:a, cor:"#C0C4CE" };
-      return `<span><span class="dot" style="background:${info.cor}"></span>${escapeXml(info.rotulo)}</span>`;
-    }).join("") +
-    `<span class="injected">${escapeXml(cbStats)} · arraste os nós, clique pra abrir</span>`;
-}
-
-document.querySelectorAll("#cerebroTabs .tabbtn").forEach(b => {
-  b.addEventListener("click", () => {
-    document.querySelectorAll("#cerebroTabs .tabbtn").forEach(x => x.classList.toggle("active", x === b));
-    const grafo = b.dataset.cb === "grafo";
-    document.getElementById("cb-grafo").classList.toggle("hidden", !grafo);
-    document.getElementById("cb-busca").classList.toggle("hidden", grafo);
-    // fora da tela o grafo não anima, pra não gastar CPU à toa
-    if(grafo) startCerebroLoop(); else stopCerebroLoop();
-  });
-});
-document.getElementById("cerebroBusca").addEventListener("input", (e) => {
-  cbFiltro = e.target.value.trim();
-  realcarCerebro();
-});
 
 const EST_ABAS = ["roteiro", "insta", "postagem", "mencoes"];
 document.querySelectorAll("#estudioTabs .tabbtn").forEach(b => {
