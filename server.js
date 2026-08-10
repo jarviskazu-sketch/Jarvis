@@ -1015,6 +1015,23 @@ const server = http.createServer((req, res) => {
   /* Grafo do cofre (notas + ligações), pro Jarvis desenhar igual ao Obsidian.
      Quem monta é o CLI: as ligações moram no corpo das notas como [[wikilink]]
      e resolvê-las aqui duplicaria a regra em dois lugares. */
+  /* Abre UMA nota pra leitura. O id vai como argumento pro CLI, que só aceita
+     nota já presente no índice — então não há como pedir caminho arbitrário
+     do disco por aqui. */
+  if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/nota") {
+    const id = String(parsedReq.searchParams.get("id") || "").slice(0, 120);
+    if (!/^[a-z0-9-]+$/i.test(id)) {
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ ok: false, error: "id inválido" }));
+      return;
+    }
+    chamarCerebro(["ler", id], (err, json) => {
+      res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+      res.end(err ? JSON.stringify({ ok: false, error: err.message }) : JSON.stringify(json));
+    });
+    return;
+  }
+
   if (req.method === "GET" && parsedReq.pathname === "/api/cerebro/grafo") {
     chamarCerebro(["grafo"], (err, json) => {
       res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });

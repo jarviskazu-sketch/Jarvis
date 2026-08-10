@@ -182,6 +182,24 @@
   .cerebro-detalhe .lig{ display:block; color:var(--theme); cursor:pointer; margin-top:4px; font-size:0.8rem; }
   .cerebro-detalhe .lig:hover{ text-decoration:underline; }
   .cerebro-detalhe code{ font-size:0.72rem; color:var(--muted); word-break:break-all; }
+  /* corpo da nota, renderizado do markdown */
+  .cerebro-corpo{ margin-top:12px; padding-top:12px; border-top:1px solid #1c2740; font-size:0.82rem; }
+  .cerebro-corpo h4{ font-size:0.9rem; color:var(--theme); margin:14px 0 6px; }
+  .cerebro-corpo h5{ font-size:0.82rem; color:var(--text); margin:12px 0 4px; }
+  .cerebro-corpo h6{ font-size:0.78rem; color:var(--muted); margin:10px 0 4px; }
+  .cerebro-corpo ul{ margin:6px 0 6px 18px; }
+  .cerebro-corpo li{ margin-bottom:4px; }
+  .cerebro-corpo blockquote{
+    border-left:2px solid var(--theme); padding:4px 0 4px 10px; margin:8px 0;
+    color:var(--muted); font-style:italic;
+  }
+  .cerebro-corpo pre{
+    background:#070d18; border:1px solid #1c2740; border-radius:8px;
+    padding:10px; overflow-x:auto; font-size:0.72rem; margin:8px 0; white-space:pre-wrap;
+  }
+  .cerebro-corpo code{ background:#0f1a2e; padding:1px 5px; border-radius:4px; color:var(--theme); word-break:normal; }
+  .cerebro-corpo a{ color:var(--theme); }
+  .cerebro-corpo b{ color:var(--text); }
 
   /* ---------- ESTÚDIO DE CONTEÚDO ---------- */
   .estudioSaida{
@@ -2631,12 +2649,50 @@ function realcarCerebro(){
   });
 }
 
-function selecionarNota(id){
+/* Markdown mínimo, só o que aparece nas notas do cofre. Escapa TUDO primeiro
+   e só depois aplica formatação — assim nada que esteja escrito na nota vira
+   HTML executável. */
+function mdParaHtml(txt, aoClicarLink){
+  let h = escapeXml(txt || "");
+  const blocos = [];
+  // blocos de código saem de cena antes das outras regras, senão o conteúdo deles é formatado
+  h = h.replace(/```[\s\S]*?```/g, m => {
+    blocos.push(m.replace(/^```\w*\n?|```$/g, ""));
+    return ` BLOCO${blocos.length-1} `;
+  });
+  h = h
+    .replace(/^######\s+(.+)$/gm, "<h6>$1</h6>")
+    .replace(/^###\s+(.+)$/gm, "<h5>$1</h5>")
+    .replace(/^##\s+(.+)$/gm, "<h4>$1</h4>")
+    .replace(/^#\s+(.+)$/gm, "<h4>$1</h4>")
+    .replace(/^&gt;\s?(.*)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>")
+    .replace(/^\s*\d+\.\s+(.+)$/gm, "<li>$1</li>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>")
+    .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    // wikilink vira navegação dentro do próprio grafo
+    .replace(/\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]/g, (m, alvo) =>
+      `<span class="lig" data-ir="${escapeAttr(chaveDaNota(alvo))}">${escapeXml(alvo.trim())}</span>`)
+    .replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, "<ul>$1</ul>")
+    .replace(/\n{2,}/g, "<br><br>");
+  h = h.replace(/ BLOCO(\d+) /g, (m,i) => `<pre>${blocos[+i]}</pre>`);
+  return h;
+}
+
+/* mesma normalização que o CLI usa pra casar [[link]] com o arquivo da nota */
+function chaveDaNota(s){
+  return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+
+async function selecionarNota(id){
   cbSel = (id && id !== cbSel) ? id : null;
   realcarCerebro();
   const el = document.getElementById("cerebroDetalhe");
   if(!cbSel){
-    el.innerHTML = '<span class="sub">Clique numa nota pra ver o conteúdo. Arraste pra reorganizar.</span>';
+    el.innerHTML = '<span class="sub">Clique numa nota pra ler. Arraste pra reorganizar.</span>';
     return;
   }
   const n = cbNos.find(x => x.id === cbSel);
@@ -2646,20 +2702,38 @@ function selecionarNota(id){
     .map(e => (e.de === cbSel ? e.para : e.de))
     .map(id2 => cbNos.find(x => x.id === id2)).filter(Boolean);
 
-  el.innerHTML = `
+  const cabecalho = `
     <div class="area" style="color:${n.cor}">${escapeXml(n.icone||"")} ${escapeXml(n.rotulo)}</div>
     <h4>${escapeXml(n.titulo)}</h4>
-    ${n.resumo ? `<div class="bloco">${escapeXml(n.resumo)}</div>` : ""}
-    ${n.tags && n.tags.length ? `<div class="bloco"><div class="rot">Tags</div>${n.tags.map(t=>`<span class="chip">${escapeXml(t)}</span>`).join("")}</div>` : ""}
-    ${n.projetos && n.projetos.length ? `<div class="bloco"><div class="rot">Projetos</div>${n.projetos.map(p=>`<span class="chip">${escapeXml(p)}</span>`).join("")}</div>` : ""}
+    ${n.tags && n.tags.length ? `<div style="margin-top:6px;">${n.tags.map(t=>`<span class="chip">${escapeXml(t)}</span>`).join("")}</div>` : ""}`;
+
+  el.innerHTML = cabecalho + '<div class="bloco"><span class="sub">abrindo a nota…</span></div>';
+
+  let corpoHtml = "";
+  try{
+    const d = await (await fetch(ANTENNA_BASE + "/api/cerebro/nota?id=" + encodeURIComponent(cbSel))).json();
+    corpoHtml = d.ok
+      ? `<div class="cerebro-corpo">${mdParaHtml(d.corpo)}</div>`
+      : `<div class="sub">Não consegui abrir: ${escapeXml(d.error||"")}</div>`;
+  }catch(e){
+    corpoHtml = `<div class="sub">Antena offline — não deu pra ler o conteúdo.</div>`;
+  }
+  if(cbSel !== n.id) return; // trocou de nota enquanto carregava
+
+  el.innerHTML = cabecalho + corpoHtml + `
     <div class="bloco"><div class="rot">Ligações (${vizinhos.length})</div>
       ${vizinhos.length ? vizinhos.map(v=>`<span class="lig" data-ir="${escapeAttr(v.id)}">→ ${escapeXml(v.titulo)}</span>`).join("")
                         : '<span class="sub">nenhuma — esta nota está isolada</span>'}
     </div>
     <div class="bloco"><div class="rot">Arquivo</div><code>${escapeXml(n.relativo)}</code></div>`;
 
+  el.scrollTop = 0;
   el.querySelectorAll("[data-ir]").forEach(b =>
-    b.addEventListener("click", () => selecionarNota(b.dataset.ir)));
+    b.addEventListener("click", () => {
+      // link que aponta pra nota inexistente não deve virar clique morto
+      const existe = cbNos.some(x => x.id === b.dataset.ir);
+      if(existe) selecionarNota(b.dataset.ir);
+    }));
 }
 
 function renderCerebroLegenda(){
