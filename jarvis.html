@@ -215,6 +215,61 @@
     border:1px solid rgba(34,195,255,.3); border-radius:999px; padding:4px 12px; font-size:0.76rem;
   }
   #estudioTabs .tabbtn{ font-size:0.78rem; }
+
+  /* rótulo do campo + ações do lado direito (contador, ampliar, limpar) */
+  .campoTopo{ display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .campoInfo{ display:flex; align-items:center; gap:8px; font-size:0.72rem; color:var(--muted); }
+  .miniBtn{
+    background:#0a1220; border:1px solid #1c2740; color:var(--muted); cursor:pointer;
+    border-radius:6px; padding:3px 9px; font-size:0.7rem; font-family:inherit; transition:.15s;
+  }
+  .miniBtn:hover{ border-color:var(--theme); color:var(--theme); }
+  /* área de digitação confortável: ~14 linhas, e o usuário pode esticar */
+  .areaGrande{ min-height:230px; resize:vertical; line-height:1.6; }
+
+  /* tabela de posts do Instagram — um campo por dado, em vez de texto com | */
+  .postsTabela{ margin-top:6px; }
+  .postCab, .postLinha{
+    display:grid; grid-template-columns:118px 96px 1fr 74px 74px 82px 30px;
+    gap:6px; align-items:center;
+  }
+  .postCab{
+    font-size:0.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;
+    padding:0 2px 6px; border-bottom:1px solid #1c2740; margin-bottom:8px;
+  }
+  .postLinha{ margin-bottom:6px; }
+  .postLinha input, .postLinha select{ padding:7px 8px; font-size:0.8rem; }
+  .postLinha .rmPost{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; padding:4px;
+  }
+  .postLinha .rmPost:hover{ color:#ff6b6b; }
+  @media (max-width:760px){
+    .postCab{ display:none; }
+    .postLinha{ grid-template-columns:1fr 1fr; padding:10px; background:#0a1220;
+                border:1px solid #1c2740; border-radius:10px; margin-bottom:10px; }
+    .postLinha input[data-c="legenda"]{ grid-column:1 / -1; }
+  }
+
+  /* janela ampliada — digitar e ler sem aperto */
+  #modalOverlay{
+    position:fixed; inset:0; background:rgba(2,5,10,0.82); z-index:260;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  #modalBox{
+    background:var(--panel); border:1px solid #1c2740; border-radius:14px;
+    width:min(980px,96vw); height:min(86vh,900px); display:flex; flex-direction:column; padding:20px;
+  }
+  #modalBox h3{ margin:0 0 12px; font-size:1rem; letter-spacing:0.04em; }
+  #modalCorpo{ flex:1; overflow-y:auto; min-height:0; }
+  #modalCorpo textarea{
+    width:100%; height:100%; min-height:100%; resize:none; line-height:1.7; font-size:0.92rem;
+  }
+  #modalCorpo .lidoModal{
+    white-space:pre-wrap; line-height:1.7; font-size:0.9rem; padding-right:6px;
+  }
+  #modalCorpo .lidoModal h4{ color:var(--theme); font-size:0.82rem; letter-spacing:0.06em; margin:16px 0 6px; }
+  #modalCorpo .lidoModal h4:first-child{ margin-top:0; }
+  .modalAcoes{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
   .redeRow{
     display:grid; grid-template-columns:130px 1fr auto; gap:12px; align-items:center;
     padding:10px 12px; background:#0a1220; border:1px solid #1c2740;
@@ -925,11 +980,17 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
 
     <div id="est-roteiro">
       <div id="vozPerfilBox"></div>
-      <div class="field" style="margin-top:12px;">
-        <label id="roteiroLabel">REFERÊNCIA (post, thread, transcrição — pode colar vários)</label>
-        <textarea id="roteiroInput" style="min-height:120px;" placeholder="cole aqui a referência que você quer transformar em vídeo"></textarea>
+      <div class="field" style="margin-top:14px;">
+        <div class="campoTopo">
+          <label id="roteiroLabel">REFERÊNCIA (post, thread, transcrição — pode colar vários)</label>
+          <span class="campoInfo"><span id="roteiroContador">vazio</span>
+            <button class="miniBtn" id="roteiroExpandir" title="Escrever em tela cheia">⛶ ampliar</button>
+            <button class="miniBtn" id="roteiroLimpar" title="Limpar o campo">✕ limpar</button>
+          </span>
+        </div>
+        <textarea id="roteiroInput" class="areaGrande" placeholder="cole aqui a referência que você quer transformar em vídeo"></textarea>
       </div>
-      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <div class="row" style="margin-top:12px; gap:8px; flex-wrap:wrap;">
         <button class="btn primary" id="roteiroBtn">▶ Gerar roteiro</button>
         <button class="btn" id="vozResetBtn" title="Refazer o perfil de voz do zero">↺ Refazer meu perfil de voz</button>
       </div>
@@ -938,18 +999,15 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
 
     <div id="est-insta" class="hidden">
       <div class="settingsHelp">
-        Cole os dados dos concorrentes: um post por linha, no formato
-        <code>@perfil | formato | 1ª linha da legenda | likes | comentários | views</code>.
-        O Instagram bloqueia coleta automática, então o caminho que funciona é print/anotação manual.
+        Um post por linha, cada dado no seu campo. O Instagram bloqueia coleta automática,
+        então o caminho que funciona é anotar do print. Deixe em branco o que não tiver —
+        a análise marca como <b>faltante</b> em vez de inventar.
       </div>
-      <div class="field" style="margin-top:10px;">
-        <label>DADOS DOS POSTS</label>
-        <textarea id="instaInput" style="min-height:140px;" placeholder="@concorrente | reel | Ninguém te conta isso sobre... | 1200 | 85 | 45000"></textarea>
-      </div>
-      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
-        <div class="field" style="max-width:220px;"><label>SEU NICHO</label>
+
+      <div class="row" style="margin-top:12px; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="field" style="max-width:230px;"><label>SEU NICHO</label>
           <input type="text" id="instaNicho" placeholder="ex: seguros para PMEs"></div>
-        <div class="field" style="max-width:200px;"><label>OBJETIVO</label>
+        <div class="field" style="max-width:190px;"><label>OBJETIVO</label>
           <select id="instaObjetivo">
             <option value="crescer seguidor">crescer seguidor</option>
             <option value="gerar DM/venda">gerar DM/venda</option>
@@ -957,7 +1015,25 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
           </select>
         </div>
       </div>
-      <button class="btn primary" id="instaBtn" style="margin-top:10px;">▶ Analisar</button>
+
+      <div class="campoTopo" style="margin-top:16px;">
+        <label>POSTS DOS CONCORRENTES</label>
+        <span class="campoInfo"><span id="instaContador">0 posts</span>
+          <button class="miniBtn" id="instaColar" title="Colar vários de uma vez">📋 colar em massa</button>
+          <button class="miniBtn" id="instaLimpar" title="Apagar todas as linhas">✕ limpar</button>
+        </span>
+      </div>
+
+      <div class="postsTabela">
+        <div class="postCab">
+          <span>@perfil</span><span>formato</span><span>1ª linha da legenda</span>
+          <span>likes</span><span>coment.</span><span>views</span><span></span>
+        </div>
+        <div id="instaLinhas"></div>
+      </div>
+      <button class="addRowBtn" id="instaAddBtn" style="margin-top:8px;">+ adicionar post</button>
+
+      <button class="btn primary" id="instaBtn" style="margin-top:14px;">▶ Analisar</button>
       <div id="instaHistorico"></div>
       <div id="instaSaida" class="estudioSaida hidden"></div>
     </div>
@@ -1008,6 +1084,19 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
         <button class="btn" id="cancelEditBtn">Cancelar</button>
         <button class="btn primary" id="saveNoteBtn">Salvar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Janela ampliada: serve tanto pra DIGITAR com espaço quanto pra LER o
+     resultado sem ficar espremido no painel. -->
+<div id="modalOverlay" class="hidden">
+  <div id="modalBox">
+    <h3 id="modalTitulo"></h3>
+    <div id="modalCorpo"></div>
+    <div class="modalAcoes">
+      <button class="btn" id="modalCopiar">📋 Copiar</button>
+      <button class="btn primary" id="modalFechar">Fechar</button>
     </div>
   </div>
 </div>
@@ -2767,7 +2856,7 @@ document.querySelectorAll("#estudioTabs .tabbtn").forEach(b => {
     EST_ABAS.forEach(a => document.getElementById("est-"+a).classList.toggle("hidden", b.dataset.est !== a));
     if(b.dataset.est === "postagem") renderPostagem();
     if(b.dataset.est === "mencoes"){ renderMencaoChips(); renderMencoesSalvas(); }
-    if(b.dataset.est === "insta") renderInstaHistorico();
+    if(b.dataset.est === "insta"){ renderInstaLinhas(); renderInstaHistorico(); }
   });
 });
 
@@ -2938,9 +3027,74 @@ function renderVozPerfil(){
   }
 }
 
-function estudioSaida(el, html){
-  el.innerHTML = html;
+/* ---------- janela ampliada (digitar com espaço / ler sem aperto) ---------- */
+let modalTextareaAtiva = null;   // quando aberta pra edição, guarda o campo de origem
+let modalAoFechar = null;        // callback opcional, recebe o texto digitado
+
+function abrirModal(titulo, opcoes){
+  const o = opcoes || {};
+  modalAoFechar = o.aoFechar || null;
+  document.getElementById("modalTitulo").textContent = titulo;
+  const corpo = document.getElementById("modalCorpo");
+  if(o.editar){
+    // edição: espelha o textarea de origem e devolve o texto ao fechar
+    modalTextareaAtiva = o.editar;
+    corpo.innerHTML = `<textarea id="modalEdit"></textarea>`;
+    const t = document.getElementById("modalEdit");
+    t.value = o.editar.value;
+    t.placeholder = o.editar.placeholder || "";
+    setTimeout(() => t.focus(), 50);
+  } else {
+    modalTextareaAtiva = null;
+    corpo.innerHTML = `<div class="lidoModal">${o.html || ""}</div>`;
+    corpo.scrollTop = 0;
+  }
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+
+function fecharModal(){
+  const t = document.getElementById("modalEdit");
+  const texto = t ? t.value : "";
+  // o que foi digitado na janela grande volta pro campo pequeno
+  if(modalTextareaAtiva && t){
+    modalTextareaAtiva.value = texto;
+    modalTextareaAtiva.dispatchEvent(new Event("input", { bubbles:true }));
+  }
+  modalTextareaAtiva = null;
+  document.getElementById("modalOverlay").classList.add("hidden");
+  const cb = modalAoFechar;
+  modalAoFechar = null;
+  if(cb) cb(texto);
+}
+
+document.getElementById("modalFechar").addEventListener("click", fecharModal);
+document.getElementById("modalOverlay").addEventListener("click", (e) => {
+  if(e.target.id === "modalOverlay") fecharModal();
+});
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && !document.getElementById("modalOverlay").classList.contains("hidden")) fecharModal();
+});
+document.getElementById("modalCopiar").addEventListener("click", () => {
+  const t = document.getElementById("modalEdit");
+  const txt = t ? t.value : document.querySelector("#modalCorpo .lidoModal").innerText;
+  navigator.clipboard.writeText(txt).then(() => {
+    const b = document.getElementById("modalCopiar");
+    b.textContent = "✓ copiado";
+    setTimeout(() => b.textContent = "📋 Copiar", 1500);
+  }).catch(() => {});
+});
+
+/* Mostra o resultado no painel e oferece abrir em tela cheia — texto longo
+   fica ruim de ler dentro da caixa. */
+function estudioSaida(el, html, titulo){
+  const podeAmpliar = titulo && html && html.length > 400;
+  el.innerHTML = (podeAmpliar
+    ? `<div style="text-align:right;margin-bottom:8px;">
+         <button class="miniBtn" data-ampliar="1">⛶ ler em tela cheia</button></div>`
+    : "") + html;
   el.classList.remove("hidden");
+  const b = el.querySelector("[data-ampliar]");
+  if(b) b.addEventListener("click", () => abrirModal(titulo, { html }));
 }
 
 function semChaveAviso(){
@@ -2991,14 +3145,14 @@ document.getElementById("roteiroBtn").addEventListener("click", async () => {
       vozPerfil = p; saveJSON("jarvis_voz_perfil", p);
       renderVozPerfil();
       document.getElementById("roteiroInput").value = "";
-      estudioSaida(el, renderPerfilHTML(p));
+      estudioSaida(el, renderPerfilHTML(p), "Seu perfil de voz");
     } else {
       const sys = PROMPT_ROTEIRO.replace("{perfil}", JSON.stringify(vozPerfil));
       const r = await callLLM({ system: sys, messages:[{role:"user", content: txt}],
                                 maxTokens: 1400, activity: "conteudo" });
       if(!r.ok){ estudioSaida(el, "Falhou: " + r.errorMsg); return; }
       const o = parseJSONdaIA(r.text);
-      estudioSaida(el, o ? renderRoteiroHTML(o, r) : escapeXml(r.text));
+      estudioSaida(el, o ? renderRoteiroHTML(o, r) : escapeXml(r.text), "Roteiro gerado");
     }
   }catch(e){
     estudioSaida(el, "Deu erro: " + e.message);
@@ -3048,8 +3202,117 @@ function renderRoteiroHTML(o, r){
 <h4>—</h4><span class="sub">via ${escapeXml(r.provider||"")} · ${escapeXml(r.model||"")}</span>`;
 }
 
+/* ---------- campo grande de roteiro: contador, ampliar e limpar ---------- */
+function atualizarContadorRoteiro(){
+  const t = document.getElementById("roteiroInput");
+  const el = document.getElementById("roteiroContador");
+  const v = t.value.trim();
+  if(!v){ el.textContent = "vazio"; return; }
+  // "textos" separados por linha em branco — é assim que se cola vários exemplos
+  const blocos = v.split(/\n\s*\n/).filter(x => x.trim().length > 20).length;
+  el.textContent = `${v.length.toLocaleString("pt-BR")} caracteres` + (blocos > 1 ? ` · ${blocos} textos` : "");
+}
+document.getElementById("roteiroInput").addEventListener("input", atualizarContadorRoteiro);
+document.getElementById("roteiroExpandir").addEventListener("click", () =>
+  abrirModal(document.getElementById("roteiroLabel").textContent,
+             { editar: document.getElementById("roteiroInput") }));
+document.getElementById("roteiroLimpar").addEventListener("click", () => {
+  const t = document.getElementById("roteiroInput");
+  if(t.value && !confirm("Limpar o que está escrito aqui?")) return;
+  t.value = ""; atualizarContadorRoteiro();
+});
+
 /* ---------- pesquisa de Instagram ---------- */
 let instaHist = loadJSON("jarvis_insta_hist", []);
+let instaPosts = loadJSON("jarvis_insta_posts", []);   // rascunho sobrevive ao reload
+
+const FORMATOS = ["reel", "carrossel", "imagem"];
+
+function renderInstaLinhas(){
+  const wrap = document.getElementById("instaLinhas");
+  if(!instaPosts.length) instaPosts = [{ perfil:"", formato:"reel", legenda:"", likes:"", coments:"", views:"" }];
+  wrap.innerHTML = instaPosts.map((p,i) => `
+    <div class="postLinha" data-i="${i}">
+      <input type="text" data-c="perfil" value="${escapeAttr(p.perfil)}" placeholder="@perfil">
+      <select data-c="formato">${FORMATOS.map(f =>
+        `<option value="${f}" ${p.formato===f?"selected":""}>${f}</option>`).join("")}</select>
+      <input type="text" data-c="legenda" value="${escapeAttr(p.legenda)}" placeholder="1ª linha da legenda / gancho">
+      <input type="number" data-c="likes" value="${escapeAttr(p.likes)}" placeholder="—" min="0">
+      <input type="number" data-c="coments" value="${escapeAttr(p.coments)}" placeholder="—" min="0">
+      <input type="number" data-c="views" value="${escapeAttr(p.views)}" placeholder="—" min="0">
+      <button class="rmPost" data-rm="${i}" title="remover">✕</button>
+    </div>`).join("");
+
+  wrap.querySelectorAll(".postLinha").forEach(linha => {
+    const i = +linha.dataset.i;
+    linha.querySelectorAll("[data-c]").forEach(campo => {
+      const ev = campo.tagName === "SELECT" ? "change" : "input";
+      campo.addEventListener(ev, () => {
+        instaPosts[i][campo.dataset.c] = campo.value;
+        saveJSON("jarvis_insta_posts", instaPosts);
+        atualizarContadorInsta();
+      });
+    });
+  });
+  wrap.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => {
+    instaPosts.splice(+b.dataset.rm, 1);
+    saveJSON("jarvis_insta_posts", instaPosts);
+    renderInstaLinhas();
+  }));
+  atualizarContadorInsta();
+}
+
+function postsPreenchidos(){
+  return instaPosts.filter(p => (p.perfil||"").trim() || (p.legenda||"").trim());
+}
+function atualizarContadorInsta(){
+  const n = postsPreenchidos().length;
+  const perfis = new Set(postsPreenchidos().map(p => (p.perfil||"").trim().toLowerCase()).filter(Boolean)).size;
+  document.getElementById("instaContador").textContent =
+    `${n} post${n===1?"":"s"}` + (perfis ? ` · ${perfis} ${perfis===1?"perfil":"perfis"}` : "");
+}
+
+document.getElementById("instaAddBtn").addEventListener("click", () => {
+  const ult = instaPosts[instaPosts.length-1] || {};
+  // repete o perfil da última linha: normalmente se cadastra vários posts do mesmo concorrente
+  instaPosts.push({ perfil: ult.perfil || "", formato:"reel", legenda:"", likes:"", coments:"", views:"" });
+  saveJSON("jarvis_insta_posts", instaPosts);
+  renderInstaLinhas();
+  const campos = document.querySelectorAll('#instaLinhas .postLinha:last-child [data-c="legenda"]');
+  if(campos.length) campos[0].focus();
+});
+
+document.getElementById("instaLimpar").addEventListener("click", () => {
+  if(!confirm("Apagar todas as linhas?")) return;
+  instaPosts = [];
+  saveJSON("jarvis_insta_posts", instaPosts);
+  renderInstaLinhas();
+});
+
+/* Colar em massa: aceita linhas separadas por | ou por tabulação (o que sai
+   ao copiar de planilha), pra não obrigar a digitar campo a campo. */
+document.getElementById("instaColar").addEventListener("click", () => {
+  const rascunho = document.createElement("textarea");
+  rascunho.placeholder =
+    "@perfil | formato | legenda | likes | comentários | views\n" +
+    "(uma linha por post — também aceita colado direto de planilha)";
+  abrirModal("Colar vários posts de uma vez", {
+    editar: rascunho,
+    aoFechar: (texto) => {
+      if(!texto.trim()) return;
+      const novos = texto.trim().split(/\n+/).map(l => {
+        const c = l.split(/\t|\s*\|\s*/).map(x => x.trim());
+        return { perfil:c[0]||"", formato: FORMATOS.includes((c[1]||"").toLowerCase()) ? c[1].toLowerCase() : "reel",
+                 legenda:c[2]||"", likes:c[3]||"", coments:c[4]||"", views:c[5]||"" };
+      }).filter(p => p.perfil || p.legenda);
+      if(!novos.length) return;
+      // descarta as linhas em branco que já estavam na tela antes de somar
+      instaPosts = postsPreenchidos().concat(novos);
+      saveJSON("jarvis_insta_posts", instaPosts);
+      renderInstaLinhas();
+    }
+  });
+});
 
 function renderInstaHistorico(){
   const el = document.getElementById("instaHistorico");
@@ -3092,8 +3355,14 @@ ALERTAS (dados faltando, amostra pequena)`;
 
 document.getElementById("instaBtn").addEventListener("click", async () => {
   const el = document.getElementById("instaSaida");
-  const dados = document.getElementById("instaInput").value.trim();
-  if(!dados){ estudioSaida(el, "Cole os dados dos posts primeiro."); return; }
+  const posts = postsPreenchidos();
+  if(!posts.length){ estudioSaida(el, "Preencha pelo menos um post — @perfil ou a legenda."); return; }
+  // monta a tabela pra IA; campo em branco vira "faltante", nunca zero inventado
+  const cab = "perfil | formato | legenda | likes | comentarios | views";
+  const dados = cab + "\n" + posts.map(p => [
+    p.perfil || "faltante", p.formato || "faltante", p.legenda || "faltante",
+    p.likes || "faltante", p.coments || "faltante", p.views || "faltante"
+  ].join(" | ")).join("\n");
   if(!anyProviderHasKey()){ estudioSaida(el, semChaveAviso()); return; }
 
   const btn = document.getElementById("instaBtn");
@@ -3113,7 +3382,7 @@ document.getElementById("instaBtn").addEventListener("click", async () => {
       instaHist = instaHist.slice(0, 8); // 8 rodadas ~ 2 meses de semanal
       saveJSON("jarvis_insta_hist", instaHist);
       renderInstaHistorico();
-      estudioSaida(el, escapeXml(r.text) + `\n\n— via ${r.provider} · ${r.model}`);
+      estudioSaida(el, escapeXml(r.text) + `\n\n— via ${r.provider} · ${r.model}`, "Análise de concorrentes");
     } else {
       estudioSaida(el, "Falhou: " + r.errorMsg);
     }

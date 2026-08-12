@@ -1,51 +1,51 @@
 ﻿{
-    "gerado_em":  "2026-08-06T20:11:54",
-    "pasta":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-06",
-    "html":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-06\\boletim.html",
-    "audio":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-06\\boletim.m4a",
+    "gerado_em":  "2026-08-12T09:17:14",
+    "pasta":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12",
+    "html":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12\\boletim.html",
+    "audio":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12\\boletim.m4a",
     "manchetes":  [
                       {
-                          "titulo":  "Susep debate papel da regulação de seguros na transição climática",
-                          "veiculo":  "SEGS Portal Nacional",
-                          "link":  "https://news.google.com/rss/articles/CBMirAFBVV95cUxNNXYtbXhmUDVSZ3hDOVZSQjJreE5fdG1Na2NlckNVaVFsRmthbzZFMl9NQkFSR3g0czRndjFudkd2U2hEYlJPRk5xeng4VjZNVlZrUVcwaDlqdks3bFdmT1ktSVUyMGlSX0dwajRlVU9PWGI4dDlqUTlfdGphYW1uU1FrejAydkpGVy1WdWpISUlON2xHYmJrbnB5UGxacjhpYTFNVDJyeURXcE5z0gGsAUFVX3lxTE01di1teGZQNVJneEM5VlJCMmt4Tl90bU1rY2VyQ1VpUWxGa2FvNkUyX01CQVJHeDRzNGd2MW52R3ZTaERiUk9GTnF6eDhWNk1WVmtRVzBoOWp2SzdsV2ZPWS1JVTIwaVJfR3BqNGVVT09YYjh0OWpROV90amFhbW5TUWt6MDJ2SkZXLVZ1akhJSU43bEdiYmtucHlQbFpyOGlhMU1UMnJ5RFdwTnM?oc=5",
+                          "titulo":  "Electra negocia venda de duas hidrelétricas ao grupo Calpar",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/electra-negocia-venda-de-duas-hidreletricas-ao-grupo-calpar/",
                           "score":  92
                       },
                       {
-                          "titulo":  "Câmara de Belém pede à Aneel suspensão do reajuste de 7,6% na tarifa de energia no Pará",
-                          "veiculo":  "romanews.com.br",
-                          "link":  "https://news.google.com/rss/articles/CBMixAFBVV95cUxNcHhyWFhPT3FaREYzU0dxMUMzUVk0YUswcEdPMENDaHRXWENIcEhiMkNkSkpQY3VkMElmNHROcGpQbVZFaGtXMUxGaF9wRFB1aXR4ZVlNUXB4VzNHbnhtbFpJcTEyTXQtaWdYcVA5c0h1bDlLaUdiSmRRU2IzRGFub182QUg1bjktWWhFME1wM2YzRDRlczEyZW1qSEpSWFlXMFcxbVJQS3VST05pbXo5ZmxNWVRjeTZhNTBPOGdYblFFYmxE?oc=5",
-                          "score":  88
+                          "titulo":  "Susep cancela autorização para funcionamento de Corretora de Resseguro",
+                          "veiculo":  "CQCS Seguros",
+                          "link":  "https://cqcs.com.br/noticia/susep-cancela-autorizacao-para-funcionamento-de-corretora-de-resseguro/",
+                          "score":  90
                       },
                       {
-                          "titulo":  "Aneel pede aval jurídico para diferenciar geradores no rateio das baterias",
+                          "titulo":  "Aneel suspende julgamento da nova tarifa de energia no Pará",
+                          "veiculo":  "G1",
+                          "link":  "https://news.google.com/rss/articles/CBMi5gFBVV95cUxQVV9yTmxtOUVWV3cwNGFocWtQVWs2YTB6cUkwa0lwYjhoay1jaTEtU0JnYW9xeHE3Mlk1dmo2MENyVGdXQVlLNjVhODVfWHdaSkpBN1pnZWxnZ0NVUGpSYU1lSDVCbTRQWHVOb1VRdUdYLVNkTU1FQmdqRzltb1RfZ3BlVTZwaERpM3h1bHcxZ1ItdzFpbzRrVGo5ZHVLZkYyR281ZjZKc0tzVDhNT01rQkZLSkZ2SXRxa1k3VjdGRjJtZFh4Tlduem5Ca3RQMDRFSW1idlk1bVVlNVItTk5pU1NDNnB0UdIB5gFBVV95cUxQVV9yTmxtOUVWV3cwNGFocWtQVWs2YTB6cUkwa0lwYjhoay1jaTEtU0JnYW9xeHE3Mlk1dmo2MENyVGdXQVlLNjVhODVfWHdaSkpBN1pnZWxnZ0NVUGpSYU1lSDVCbTRQWHVOb1VRdUdYLVNkTU1FQmdqRzltb1RfZ3BlVTZwaERpM3h1bHcxZ1ItdzFpbzRrVGo5ZHVLZkYyR281ZjZKc0tzVDhNT01rQkZLSkZ2SXRxa1k3VjdGRjJtZFh4Tlduem5Ca3RQMDRFSW1idlk1bVVlNVItTk5pU1NDNnB0UQ?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "Ação movida pelo Pará faz ANEEL adiar decisão de reajustar tarifa de energia",
+                          "veiculo":  "DOL",
+                          "link":  "https://news.google.com/rss/articles/CBMitwFBVV95cUxOQTFXWTNob0FQSTA1azZ0RWktWml5VVFNQTl5d3VEWklpX2pnVFR4SDlKc05LRlJuN3dvMzZLTFZaOGtkamRsZ2hRTlF6N0lWVnB6TkM2dHJ6YURUNGVrUl9BUU04Z0h6NzlkdHlpOUtYXy10Zk1WNDNTdEIzaTgzY3NOclFXWVVTWVhpWE1TbXlRTW1LQVNKc0tmY3JwNGUwN2dMbmp4ZkZkWDZlejNMTFItM0ZKLVnSAb8BQVVfeXFMT2sxNTg4SXZkVHlLQ1JpU1V4Q2pWNkR1Y0Q3WVZ2LXJpdUhjSWxZWFdBRGc3eTFXZzRnSHVnSDYwWlJwWWJGWWQwSGpOcm9VMDlRU0NZWkZKLTlNNjdSV3M0anNhbFZWMW4wWHNMUFI2RjNUU05WZUhtdXFJd01QOUpRT0F1OGZ0TGk4NUNfenFGRXFtcllQaGN6QWI4NThEbE9zMmJLY25VVFVUQTBYZkNkb2ZGUkRubDlvS1puZkE?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "Acre terá R$ 37,2 milhões em recursos para reduzir impacto da tarifa de energia, decide Aneel",
+                          "veiculo":  "A Gazeta do Acre",
+                          "link":  "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPMlczX28xRTA4eFNMRjlZV19pbUpNeGFrMkpjZjBzMlJiOXE4VVZENmlQcDdwRmpjUHMxWVZPYU5pX1pBSzVqQS12TzNwN2lLZTFRS205Y1FDZHg5T29kSUhfUnlNdENyXzdmT3NZUnY1N2twSW9PelRKQmpIMC1FNzhvaElSRF9EVFJfZk5IUF9mOEVUQmlENkdTNVBoWnFHM2pxTUpQMmZ4NXMxUF9jNEIya0hKdWJfY2JEOWRVYkRhRFlsV3J6LUdUZDBQemx6azVtbmR3OA?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "Reajuste da tarifa de energia no Pará tem votação suspensa após pedido de vista na Aneel | Economia",
+                          "veiculo":  "O Liberal",
+                          "link":  "https://news.google.com/rss/articles/CBMi0gFBVV95cUxPU2N4NG9JYXdPZ0JnNGFQMDZ4ai1nQkVMSzBCWUEwME9qTDZUeDcyaC0zTk1OYXVpdmtZUEtQTVZIQmtQQmdIeVRWZHRCVWJHTVF5MlJ1X3FtZXZqOU0zTjY3YUMwU2hLOEY3NVdNWjIwVDJhbXNyZ2VrcGRPakVLRjJPMFhVdkFyX2pkNVd4dVE2cldodVNPd2VOcWJzYk42alNnbS1zWEQ4eTVxNW1xM29HOWJJRzBDUXNYTlFUUFc4bDJwMkFFRThoU0pJNTVpc3fSAdIBQVVfeXFMT1NjeDRvSWF3T2dCZzRhUDA2eGotZ0JFTEswQllBMDBPakw2VHg3MmgtM05NTmF1aXZrWVBLUE1WSEJrUEJnSHlUVmR0QlViR01ReTJSdV9xbWV2ajlNM042N2FDMFNoSzhGNzVXTVoyMFQyYW1zcmdla3BkT2pFS0YyTzBYVXZBcl9qZDVXeHVRNnJXaHVTT3dlTnFic2JONmpTZ20tc1hEOHk1cTVtcTNvRzliSUcwQ1FzWE5RVFBXOGwycDJBRUU4aFNKSTU1aXN3?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "Aneel homologa resultado da 2ª etapa do leilão de transmissão, com R$ 1,8 bi em investimentos",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/armazenamento/aneel-pede-aval-juridico-para-diferenciar-geradores-no-rateio-das-baterias/",
-                          "score":  88
-                      },
-                      {
-                          "titulo":  "ANEEL pauta processo da Enel SP e situação da TermoG no LRCAP 2026",
-                          "veiculo":  "Agência iNFRA",
-                          "link":  "https://news.google.com/rss/articles/CBMingFBVV95cUxOSHpOUk9QQV8xaE1WUldvOHBaRFE3R1VKb0EtY2o0NEVTam1za2F5NEQxVWMtMTNVN0RHNDJGWHJQRGU5Q1NBRE9VRHA5VG9RaVlOVWQtcXFUc3JOdEEzOUM2TG9HTlZUc0FXZUoyV0xWY2ZtREllOHJ1b2dxbk5Jd0xITkFtdHFwT2xfWkhRN2tfdDZuTE9yZ2JyOXNDUQ?oc=5",
-                          "score":  83
-                      },
-                      {
-                          "titulo":  "ANEEL fixa R$ 470 milhões em quotas da RGR para geradoras e transmissoras no ciclo 2026/2027",
-                          "veiculo":  "Cenário Energia",
-                          "link":  "https://news.google.com/rss/articles/CBMizgFBVV95cUxQVE5ic0w0ejNUSy14QjFyTk90SmFYbjVPNzh4UHdfb1FtZGRtbHNvNmxjWktmdXpwWWtieF9xMzlMV1VOYzhKSmt0aFdjU2k2ZThEdFRaLWJrSmp6V2F6RWdOOFhWNVBlSFZDNVczOW5hUGY3aFJvVkoyRE5sNjVEUUM1X2tQczFpcTNwSWI3alJxLUFyMXBZRHMtVTZXc3JBMmV0ekc1WXBoNU1jTVlIWTh4eTh0Unp2YmNoUzZpbFRsY3gxMUJWczlaYTJkQQ?oc=5",
-                          "score":  83
-                      },
-                      {
-                          "titulo":  "ANEEL analisa recurso da Enel SP contra processo de caducidade em sessão que marca despedida de Fernando Mosna",
-                          "veiculo":  "Cenário Energia",
-                          "link":  "https://news.google.com/rss/articles/CBMi5wFBVV95cUxNbVNGNlFnRG9fRHdQU3FSYTU2bVc3SWExQVdocjV2ZThlMzQ1VUVHcllQUGxlbVp4Z0Q2SWNfeVFtcGJFNnJYUXdPeS1idmFBU24xMkpablBNVzlYMkdSczA3NmRXZWFlWVFnZ29wTlRZZDVNZkRkNzhfekI1czkzMHJzWFJBd19QaUdnN2VXcXJycFVpOXdMT3c2OW1hZUlEdFd4T3U3SU91cVlTdDV6aU9ILVYyQjJlVnczbUV3VHlIMjB5MzhVaDk4MlpUckpyZnE0ZWVCSkFYb0ZmaVRaLWs5VzZlVU0?oc=5",
-                          "score":  79
-                      },
-                      {
-                          "titulo":  "Conselho Diretor da Susep realizará reunião extraordinária",
-                          "veiculo":  "www.gov.br",
-                          "link":  "https://news.google.com/rss/articles/CBMiywFBVV95cUxQNUJNTjJUMWFqTUlmMEdXV0E3akpCWUtBVkxDLWZESnM4VWk5TVgzbEFFSDdrcTdETlN6S3pkNmFHRTNONnFrc3pMQWYyeWxNMjdRSWp6bGhwOXBsX21McExIMHhRRllsbGNnelBMSlY4cmh3a3BweWlUV1k0U1JpUVdWT1FKd1FpaERBTGxhS1dlT29QanMxZWY2bXo2TkFob0R1QlZ2ajVIQ2RqZzJXM1l4dXdxbklUSDNhUHh4czJTU0U0SmV2SnhiWQ?oc=5",
-                          "score":  79
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/aneel-homologa-resultado-da-2a-etapa-do-leilao-de-transmissao-com-r-18-bi-em-investimentos/",
+                          "score":  85
                       }
                   ],
-    "duracao":  "00:02:13"
+    "duracao":  "00:02:40"
 }
