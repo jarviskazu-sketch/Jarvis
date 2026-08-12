@@ -1,13 +1,18 @@
 {
-  "last_run": "2026-08-12T13:36:24.338Z",
+  "last_run": "2026-08-12T18:26:06.200Z",
   "ok": false,
-  "detail": "43 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 2 na fila",
+  "detail": "43 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 3 na fila",
   "count": 43,
   "fila": [
     {
+      "sessao": "5199f9d2-caee-4871-8036-9845e757cc6f",
+      "tentativas": 0,
+      "criado": "2026-08-12T13:41:04.247Z"
+    },
+    {
       "sessao": "b6b28b24-ae74-453e-941c-d7e587dd81b1",
       "tentativas": 0,
-      "criado": "2026-08-12T13:09:19.698Z"
+      "criado": "2026-08-12T17:05:39.690Z"
     },
     {
       "sessao": "sessao-fila-01",
