@@ -1,0 +1,121 @@
+{
+  "_leia_me": "Todas estas fontes foram baixadas e validadas de verdade antes de entrar. Pra desativar uma sem perder o historico, mude 'ativo' pra false (ou use: radar -fonte <nome>). Nota vai de 0 a 10 e pesa no ranking.",
+  "fontes": [
+    {
+      "nome": "ANEEL e mercado livre",
+      "tipo": "oficial",
+      "feed": "https://news.google.com/rss/search?q=ANEEL+OR+%22mercado+livre+de+energia%22+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "idioma": "pt-BR",
+      "nota": 10,
+      "ativo": true,
+      "porque": "Fonte primaria/regulatoria: o que sai daqui vira regra e mexe com tarifa e contrato."
+    },
+    {
+      "nome": "SUSEP e corretagem",
+      "tipo": "oficial",
+      "feed": "https://news.google.com/rss/search?q=SUSEP+OR+%22corretora+de+seguros%22+OR+CNseg+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "idioma": "pt-BR",
+      "nota": 10,
+      "ativo": true,
+      "porque": "Regulacao de seguros - impacto direto na Murus."
+    },
+    {
+      "nome": "MegaWhat",
+      "tipo": "especializada",
+      "feed": "https://megawhat.uol.com.br/feed/",
+      "idioma": "pt-BR",
+      "nota": 9,
+      "ativo": true,
+      "porque": "Imprensa especializada em energia, pauta propria e apuracao no setor."
+    },
+    {
+      "nome": "CQCS Seguros",
+      "tipo": "especializada",
+      "feed": "https://cqcs.com.br/feed/",
+      "idioma": "pt-BR",
+      "nota": 8,
+      "ativo": true,
+      "porque": "O veiculo mais movimentado do mercado segurador brasileiro."
+    },
+    {
+      "nome": "Sonho Seguro",
+      "tipo": "especializada",
+      "feed": "https://www.sonhoseguro.com.br/feed/",
+      "idioma": "pt-BR",
+      "nota": 7,
+      "ativo": true,
+      "porque": "Blog de especialista, com analise que a imprensa diaria nao faz."
+    },
+    {
+      "nome": "Revista Apolice",
+      "tipo": "especializada",
+      "feed": "https://revistaapolice.com.br/feed/",
+      "idioma": "pt-BR",
+      "nota": 7,
+      "ativo": true,
+      "porque": "Cobre produto, canal e movimento de corretoras."
+    },
+    {
+      "nome": "Energia Brasil (agregado)",
+      "tipo": "generalista",
+      "feed": "https://news.google.com/rss/search?q=%22mercado+de+energia%22+OR+%22geracao+distribuida%22+OR+%22energia+solar%22+Brasil+when:1d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "idioma": "pt-BR",
+      "nota": 7,
+      "ativo": true,
+      "porque": "Rede de seguranca: pega o que as fontes especializadas deixarem passar."
+    },
+    {
+      "nome": "Seguros Brasil (agregado)",
+      "tipo": "generalista",
+      "feed": "https://news.google.com/rss/search?q=%22mercado+de+seguros%22+OR+insurtech+OR+%22seguro+auto%22+Brasil+when:1d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "idioma": "pt-BR",
+      "nota": 7,
+      "ativo": true,
+      "porque": "Mesma logica do agregado de energia, do lado de seguros."
+    },
+    {
+      "nome": "InfoMoney",
+      "tipo": "generalista",
+      "feed": "https://www.infomoney.com.br/feed/",
+      "idioma": "pt-BR",
+      "nota": 6,
+      "ativo": true,
+      "porque": "Da o contexto macro/mercado que conecta energia e seguros a economia."
+    },
+    {
+      "nome": "Reddit investimentos",
+      "tipo": "comunidade",
+      "feed": "https://www.reddit.com/r/investimentos/new/.rss",
+      "idioma": "pt-BR",
+      "nota": 5,
+      "ativo": true,
+      "porque": "Contraponto: mostra como o investidor comum esta lendo o setor. Ruido alto, por isso nota baixa."
+    },
+    {
+      "nome": "Contraponto internacional",
+      "tipo": "contraponto",
+      "feed": "https://news.google.com/rss/search?q=%22Brazil+power+sector%22+OR+%22Brazil+energy+auction%22+OR+%22Brazil+insurance+market%22+when:3d&hl=en-US&gl=US&ceid=US:en",
+      "idioma": "en",
+      "nota": 5,
+      "ativo": true,
+      "porque": "Como o mercado de fora enxerga o Brasil - angulo que a imprensa local nao da."
+    }
+  ],
+  "_rejeitadas": [
+    {
+      "nome": "CanalEnergia",
+      "url": "https://www.canalenergia.com.br",
+      "motivo": "o feed responde mas volta sem nenhum item"
+    },
+    {
+      "nome": "epbr",
+      "url": "https://epbr.com.br",
+      "motivo": "site nao expoe feed RSS/Atom em nenhum caminho conhecido"
+    },
+    {
+      "nome": "G1 Economia",
+      "url": "https://g1.globo.com/rss/g1/economia/",
+      "motivo": "a URL nao devolve mais XML valido (o endereco do feed mudou)"
+    }
+  ]
+}

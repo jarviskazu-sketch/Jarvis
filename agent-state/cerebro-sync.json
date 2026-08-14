@@ -1,18 +1,23 @@
 {
-  "last_run": "2026-08-12T18:26:06.200Z",
+  "last_run": "2026-08-14T22:06:37.944Z",
   "ok": false,
-  "detail": "43 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 3 na fila",
-  "count": 43,
+  "detail": "46 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 4 na fila",
+  "count": 46,
   "fila": [
+    {
+      "sessao": "1e52b451-63c3-4ee1-ac5b-068bd96ea06e",
+      "tentativas": 0,
+      "criado": "2026-08-13T22:26:06.734Z"
+    },
     {
       "sessao": "5199f9d2-caee-4871-8036-9845e757cc6f",
       "tentativas": 0,
-      "criado": "2026-08-12T13:41:04.247Z"
+      "criado": "2026-08-14T18:26:11.111Z"
     },
     {
       "sessao": "b6b28b24-ae74-453e-941c-d7e587dd81b1",
       "tentativas": 0,
-      "criado": "2026-08-12T17:05:39.690Z"
+      "criado": "2026-08-14T20:07:59.455Z"
     },
     {
       "sessao": "sessao-fila-01",
@@ -31,7 +36,7 @@
     "CLIENTE": 3,
     "DEV": 3,
     "PROCESSO": 1,
-    "DECISAO": 4,
+    "DECISAO": 5,
     "OFERTA": 1,
     "STACK": 2,
     "POSICIONAMENTO": 1,
@@ -39,6 +44,6 @@
     "PESSOAL": 1,
     "CONHECIMENTO": 4,
     "PESSOA": 1,
-    "DIARIO": 2
+    "DIARIO": 4
   }
 }

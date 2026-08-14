@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Radar de Noticias - energia e seguros</title>
+    <dateCreated>Thu, 06 Aug 2026 19:37:17</dateCreated>
+  </head>
+  <body>
+    <outline text="Radar" title="Radar">
+      <outline type="rss" text="ANEEL e mercado livre" title="ANEEL e mercado livre" xmlUrl="https://news.google.com/rss/search?q=ANEEL+OR+%22mercado+livre+de+energia%22+when:2d&amp;hl=pt-BR&amp;gl=BR&amp;ceid=BR:pt-419"/>
+      <outline type="rss" text="SUSEP e corretagem" title="SUSEP e corretagem" xmlUrl="https://news.google.com/rss/search?q=SUSEP+OR+%22corretora+de+seguros%22+OR+CNseg+when:2d&amp;hl=pt-BR&amp;gl=BR&amp;ceid=BR:pt-419"/>
+      <outline type="rss" text="MegaWhat" title="MegaWhat" xmlUrl="https://megawhat.uol.com.br/feed/"/>
+      <outline type="rss" text="CQCS Seguros" title="CQCS Seguros" xmlUrl="https://cqcs.com.br/feed/"/>
+      <outline type="rss" text="Sonho Seguro" title="Sonho Seguro" xmlUrl="https://www.sonhoseguro.com.br/feed/"/>
+      <outline type="rss" text="Revista Apolice" title="Revista Apolice" xmlUrl="https://revistaapolice.com.br/feed/"/>
+      <outline type="rss" text="Energia Brasil (agregado)" title="Energia Brasil (agregado)" xmlUrl="https://news.google.com/rss/search?q=%22mercado+de+energia%22+OR+%22geracao+distribuida%22+OR+%22energia+solar%22+Brasil+when:1d&amp;hl=pt-BR&amp;gl=BR&amp;ceid=BR:pt-419"/>
+      <outline type="rss" text="Seguros Brasil (agregado)" title="Seguros Brasil (agregado)" xmlUrl="https://news.google.com/rss/search?q=%22mercado+de+seguros%22+OR+insurtech+OR+%22seguro+auto%22+Brasil+when:1d&amp;hl=pt-BR&amp;gl=BR&amp;ceid=BR:pt-419"/>
+      <outline type="rss" text="InfoMoney" title="InfoMoney" xmlUrl="https://www.infomoney.com.br/feed/"/>
+      <outline type="rss" text="Reddit investimentos" title="Reddit investimentos" xmlUrl="https://www.reddit.com/r/investimentos/new/.rss"/>
+      <outline type="rss" text="Contraponto internacional" title="Contraponto internacional" xmlUrl="https://news.google.com/rss/search?q=%22Brazil+power+sector%22+OR+%22Brazil+energy+auction%22+OR+%22Brazil+insurance+market%22+when:3d&amp;hl=en-US&amp;gl=US&amp;ceid=US:en"/>
+    </outline>
+  </body>
+</opml>

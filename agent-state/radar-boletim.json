@@ -1,51 +1,51 @@
-﻿{
-    "gerado_em":  "2026-08-12T09:17:14",
-    "pasta":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12",
-    "html":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12\\boletim.html",
-    "audio":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-12\\boletim.m4a",
+{
+    "gerado_em":  "2026-08-14T19:11:58",
+    "pasta":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14",
+    "html":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14\\boletim.html",
+    "audio":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14\\boletim.m4a",
     "manchetes":  [
                       {
-                          "titulo":  "Electra negocia venda de duas hidrelétricas ao grupo Calpar",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/electra-negocia-venda-de-duas-hidreletricas-ao-grupo-calpar/",
-                          "score":  92
-                      },
-                      {
-                          "titulo":  "Susep cancela autorização para funcionamento de Corretora de Resseguro",
+                          "titulo":  "Susep recebe até 20 de agosto sugestões para nova regra sobre prêmios de resseguro não pagos",
                           "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/susep-cancela-autorizacao-para-funcionamento-de-corretora-de-resseguro/",
-                          "score":  90
+                          "link":  "https://cqcs.com.br/noticia/susep-recebe-ate-20-de-agosto-sugestoes-para-nova-regra-sobre-premios-de-resseguro-nao-pagos/",
+                          "score":  86
                       },
                       {
-                          "titulo":  "Aneel suspende julgamento da nova tarifa de energia no Pará",
-                          "veiculo":  "G1",
-                          "link":  "https://news.google.com/rss/articles/CBMi5gFBVV95cUxQVV9yTmxtOUVWV3cwNGFocWtQVWs2YTB6cUkwa0lwYjhoay1jaTEtU0JnYW9xeHE3Mlk1dmo2MENyVGdXQVlLNjVhODVfWHdaSkpBN1pnZWxnZ0NVUGpSYU1lSDVCbTRQWHVOb1VRdUdYLVNkTU1FQmdqRzltb1RfZ3BlVTZwaERpM3h1bHcxZ1ItdzFpbzRrVGo5ZHVLZkYyR281ZjZKc0tzVDhNT01rQkZLSkZ2SXRxa1k3VjdGRjJtZFh4Tlduem5Ca3RQMDRFSW1idlk1bVVlNVItTk5pU1NDNnB0UdIB5gFBVV95cUxQVV9yTmxtOUVWV3cwNGFocWtQVWs2YTB6cUkwa0lwYjhoay1jaTEtU0JnYW9xeHE3Mlk1dmo2MENyVGdXQVlLNjVhODVfWHdaSkpBN1pnZWxnZ0NVUGpSYU1lSDVCbTRQWHVOb1VRdUdYLVNkTU1FQmdqRzltb1RfZ3BlVTZwaERpM3h1bHcxZ1ItdzFpbzRrVGo5ZHVLZkYyR281ZjZKc0tzVDhNT01rQkZLSkZ2SXRxa1k3VjdGRjJtZFh4Tlduem5Ca3RQMDRFSW1idlk1bVVlNVItTk5pU1NDNnB0UQ?oc=5",
-                          "score":  85
+                          "titulo":  "Novo Seguros discute o impacto da Lei de Seguros na OAB/ES",
+                          "veiculo":  "Revista Apolice",
+                          "link":  "https://revistaapolice.com.br/2026/08/novo-seguros-discute-o-impacto-da-lei-de-seguros-na-oab-es/",
+                          "score":  84
                       },
                       {
-                          "titulo":  "Ação movida pelo Pará faz ANEEL adiar decisão de reajustar tarifa de energia",
-                          "veiculo":  "DOL",
-                          "link":  "https://news.google.com/rss/articles/CBMitwFBVV95cUxOQTFXWTNob0FQSTA1azZ0RWktWml5VVFNQTl5d3VEWklpX2pnVFR4SDlKc05LRlJuN3dvMzZLTFZaOGtkamRsZ2hRTlF6N0lWVnB6TkM2dHJ6YURUNGVrUl9BUU04Z0h6NzlkdHlpOUtYXy10Zk1WNDNTdEIzaTgzY3NOclFXWVVTWVhpWE1TbXlRTW1LQVNKc0tmY3JwNGUwN2dMbmp4ZkZkWDZlejNMTFItM0ZKLVnSAb8BQVVfeXFMT2sxNTg4SXZkVHlLQ1JpU1V4Q2pWNkR1Y0Q3WVZ2LXJpdUhjSWxZWFdBRGc3eTFXZzRnSHVnSDYwWlJwWWJGWWQwSGpOcm9VMDlRU0NZWkZKLTlNNjdSV3M0anNhbFZWMW4wWHNMUFI2RjNUU05WZUhtdXFJd01QOUpRT0F1OGZ0TGk4NUNfenFGRXFtcllQaGN6QWI4NThEbE9zMmJLY25VVFVUQTBYZkNkb2ZGUkRubDlvS1puZkE?oc=5",
-                          "score":  85
+                          "titulo":  "Light Prevê Regulamentação Das ASROs E Perdas Não Técnicas Pela Aneel No 2º Semestre",
+                          "veiculo":  "Cenário Energia",
+                          "link":  "https://news.google.com/rss/articles/CBMixAFBVV95cUxNZXl5blBVMGljZWM0MHNKc1B0ZzNUcmdhbkRxZ0MzMVUtNXk3WDJ5aV9Mck1udTNHVXNMM0FaWllmd1Q1LXNmYjN3X0VEczFsLW9kRTdiaDRiZHBhQnNWQkZpUmhrMG9uNWxJNXcyOFRhaGcyY29SMW51NHotWS1VTnZzWkw1Z3BMN3MxcEF4ZVBRbno1M0prcWpqRnJwV0ZWaFhtUWlEVWJOejFzUjk5T1Y0MWpfVWJ1VUlKWnE0YWJjcTY0?oc=5",
+                          "score":  83
                       },
                       {
-                          "titulo":  "Acre terá R$ 37,2 milhões em recursos para reduzir impacto da tarifa de energia, decide Aneel",
-                          "veiculo":  "A Gazeta do Acre",
-                          "link":  "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPMlczX28xRTA4eFNMRjlZV19pbUpNeGFrMkpjZjBzMlJiOXE4VVZENmlQcDdwRmpjUHMxWVZPYU5pX1pBSzVqQS12TzNwN2lLZTFRS205Y1FDZHg5T29kSUhfUnlNdENyXzdmT3NZUnY1N2twSW9PelRKQmpIMC1FNzhvaElSRF9EVFJfZk5IUF9mOEVUQmlENkdTNVBoWnFHM2pxTUpQMmZ4NXMxUF9jNEIya0hKdWJfY2JEOWRVYkRhRFlsV3J6LUdUZDBQemx6azVtbmR3OA?oc=5",
-                          "score":  85
-                      },
-                      {
-                          "titulo":  "Reajuste da tarifa de energia no Pará tem votação suspensa após pedido de vista na Aneel | Economia",
-                          "veiculo":  "O Liberal",
-                          "link":  "https://news.google.com/rss/articles/CBMi0gFBVV95cUxPU2N4NG9JYXdPZ0JnNGFQMDZ4ai1nQkVMSzBCWUEwME9qTDZUeDcyaC0zTk1OYXVpdmtZUEtQTVZIQmtQQmdIeVRWZHRCVWJHTVF5MlJ1X3FtZXZqOU0zTjY3YUMwU2hLOEY3NVdNWjIwVDJhbXNyZ2VrcGRPakVLRjJPMFhVdkFyX2pkNVd4dVE2cldodVNPd2VOcWJzYk42alNnbS1zWEQ4eTVxNW1xM29HOWJJRzBDUXNYTlFUUFc4bDJwMkFFRThoU0pJNTVpc3fSAdIBQVVfeXFMT1NjeDRvSWF3T2dCZzRhUDA2eGotZ0JFTEswQllBMDBPakw2VHg3MmgtM05NTmF1aXZrWVBLUE1WSEJrUEJnSHlUVmR0QlViR01ReTJSdV9xbWV2ajlNM042N2FDMFNoSzhGNzVXTVoyMFQyYW1zcmdla3BkT2pFS0YyTzBYVXZBcl9qZDVXeHVRNnJXaHVTT3dlTnFic2JONmpTZ20tc1hEOHk1cTVtcTNvRzliSUcwQ1FzWE5RVFBXOGwycDJBRUU4aFNKSTU1aXN3?oc=5",
-                          "score":  85
-                      },
-                      {
-                          "titulo":  "Aneel homologa resultado da 2ª etapa do leilão de transmissão, com R$ 1,8 bi em investimentos",
+                          "titulo":  "Conselho da CCEE vai discutir ‘anomalias’ de segurança de mercado e vaga de novo diretor",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/aneel-homologa-resultado-da-2a-etapa-do-leilao-de-transmissao-com-r-18-bi-em-investimentos/",
-                          "score":  85
+                          "link":  "https://megawhat.uol.com.br/mercado-energetico/conselho-da-ccee-vai-discutir-anomalias-de-seguranca-de-mercado-e-vaga-de-novo-diretor/",
+                          "score":  77
+                      },
+                      {
+                          "titulo":  "Justiça mantém Máxima Energia na CCEE durante recuperação extrajudicial",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/justica-mantem-maxima-energia-na-ccee-durante-recuperacao-extrajudicial/",
+                          "score":  77
+                      },
+                      {
+                          "titulo":  "Seguro auto para mulheres cai com avanço da personalização na análise de risco",
+                          "veiculo":  "CQCS Seguros",
+                          "link":  "https://cqcs.com.br/noticia/seguro-auto-para-mulheres-cai-com-avanco-da-personalizacao-na-analise-de-risco/",
+                          "score":  77
+                      },
+                      {
+                          "titulo":  "Painel S.A.: Área técnica da Aneel diz que não avalia se troca da Enel em SP beneficiaria consumidores",
+                          "veiculo":  "Folha de S.Paulo",
+                          "link":  "https://news.google.com/rss/articles/CBMi5AFBVV95cUxQMDhZZ0djcUN6YkRLS0Ita3hUaFdlX1BTXzU1SnJXTy1hM0lQSU5OYmwzVFZhSjNmWGZ3eUZZZXdPMk5zWDVtdzNhRnRrZFZLMm1OVDBSaXJBQ1BrWnJmNTl1clJrMjJqTTc3YUVGYm5SUmowUUt4dS11SW5OYklTQ09Ia29aZmtsS2JzS1UxX1Jvd3V4YmdVSXkxNmM5UzgtY2hfa2pPaWlFLWJhN0tuUVhjZVRJMk5OM1NJeFFnSml0bWNkSHhVbzZ4bDdkQ2UxRmtGTnBZSk1QNm5LbXBmTWdualA?oc=5",
+                          "score":  76
                       }
                   ],
-    "duracao":  "00:02:53"
+    "duracao":  "00:05:50"
 }

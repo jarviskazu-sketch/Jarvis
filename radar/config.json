@@ -1,0 +1,61 @@
+{
+    "_leia_me":  "Este eh o painel de controle do seu radar. Mude o que quiser aqui - nao precisa mexer em codigo.",
+    "nicho":  "mercado de energia e seguros/corretagem no Brasil",
+    "palavras_chave":  [
+                           "mercado livre de energia",
+                           "ANEEL",
+                           "tarifa de energia",
+                           "geracao distribuida",
+                           "energia solar",
+                           "leilao de energia",
+                           "CCEE",
+                           "SUSEP",
+                           "corretora de seguros",
+                           "insurtech",
+                           "seguro auto",
+                           "seguro residencial",
+                           "regulacao de seguros",
+                           "sinistro"
+                       ],
+    "bloqueios":  [
+                      "horoscopo",
+                      "bbb",
+                      "celebridade",
+                      "fofoca",
+                      "novela",
+                      "patrocinado",
+                      "publieditorial",
+                      "conteudo de marca",
+                      "cupom",
+                      "promocao",
+                      "black friday",
+                      "top 10",
+                      "os melhores",
+                      "voce nao vai acreditar",
+                      "veja o que aconteceu"
+                  ],
+    "janela_horas":  24,
+    "artigos_principais":  5,
+    "artigos_radar":  2,
+    "voz":  {
+                "_nota":  "motor: \u0027auto\u0027 tenta na ordem Kokoro \u003e Piper \u003e voz do Windows, usando a melhor que estiver instalada. Use \u0027piper\u0027 ou \u0027sapi\u0027 pra forcar uma delas. Rode \u0027radar vozes\u0027 pra ver as opcoes.",
+                "motor":  "auto",
+                "_nota_kokoro":  "Vozes pt-BR do Kokoro: pf_dora (feminina), pm_alex e pm_santa (masculinas). Velocidade 1.0 = normal, 0.9 mais devagar, 1.1 mais rapido.",
+                "kokoro_voz":  "pm_alex",
+                "kokoro_velocidade":  1.0,
+                "nome":  "Microsoft Maria Desktop",
+                "rate":  1,
+                "_nota_piper":  "length_scale controla a velocidade do Piper: 1.0 = normal, 1.1 = mais devagar, 0.9 = mais rapido.",
+                "piper_modelo":  "pt_BR-faber-medium.onnx",
+                "piper_length_scale":  1.0
+            },
+    "horario_automatico":  "07:00",
+    "resumo":  {
+                   "_nota":  "\u0027local\u0027 = 100% offline, sem chave nenhuma, monta o boletim a partir do proprio RSS. \u0027ia\u0027 = usa uma chave gratuita (Groq/Gemini/Cerebras) pra escrever resumo editorial. O padrao eh local, pra respeitar a regra de nao exigir API.",
+                   "modo":  "ia",
+                   "provedor":  "groq",
+                   "chave_env":  "RADAR_IA_KEY"
+               },
+    "abertura":  "Bom dia. Aqui e o seu radar de energia e seguros.",
+    "encerramento":  "Isso e tudo. Os links estao no boletim escrito de hoje."
+}

@@ -1,0 +1,19 @@
+# ambiente do Kokoro: 1.3 GB de PyTorch e dependencias. Reinstalavel com
+# os comandos no README — nao faz sentido versionar.
+kokoro/venv/
+kokoro/*.wav
+
+# binario e modelo de voz do Piper (60 MB), tambem reinstalaveis
+piper/piper/
+piper/*.onnx
+piper/*.onnx.json
+
+# saida gerada
+boletins/
+logs/
+historico.sqlite
+teste-voz.wav
+
+# credenciais
+*.env
+*.key
