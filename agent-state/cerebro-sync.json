@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-08-14T22:06:37.944Z",
+  "last_run": "2026-08-17T21:53:00.547Z",
   "ok": false,
-  "detail": "46 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 4 na fila",
-  "count": 46,
+  "detail": "49 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 4 na fila",
+  "count": 49,
   "fila": [
     {
       "sessao": "1e52b451-63c3-4ee1-ac5b-068bd96ea06e",
@@ -17,7 +17,7 @@
     {
       "sessao": "b6b28b24-ae74-453e-941c-d7e587dd81b1",
       "tentativas": 0,
-      "criado": "2026-08-14T20:07:59.455Z"
+      "criado": "2026-08-17T12:43:45.773Z"
     },
     {
       "sessao": "sessao-fila-01",
@@ -44,6 +44,6 @@
     "PESSOAL": 1,
     "CONHECIMENTO": 4,
     "PESSOA": 1,
-    "DIARIO": 4
+    "DIARIO": 7
   }
 }

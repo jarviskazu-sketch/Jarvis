@@ -6,27 +6,39 @@ exceto pelo download dos feeds — nenhuma API paga, nenhuma chave obrigatória.
 
 ## Onde este código roda
 
-O código está **versionado aqui**, mas **executa** em:
+**Aqui mesmo.** Esta pasta é a instalação: código versionado e execução no
+mesmo lugar, sem cópia para sincronizar.
 
-```
-C:\Users\<usuario>\RadarDeNoticias\
-```
-
-Isso não é descuido. O motor de voz Kokoro vive num virtualenv de 1,3 GB
-(`kokoro/venv`) e **virtualenv do Python não é relocável** — os scripts dentro
-dele gravam caminhos absolutos na criação. Mover a instalação para cá quebraria
-a narração, e reinstalar leva vários minutos de download.
-
-Então: edite aqui, copie para lá. Os arquivos que importam são poucos.
-
-```bash
-cp radar/*.py radar/*.ps1 radar/*.cmd ~/RadarDeNoticias/
-cp radar/kokoro/falar.py ~/RadarDeNoticias/kokoro/
-```
+Nem sempre foi assim. Até 17/08/2026 o Radar rodava em
+`C:\Users\<usuario>\RadarDeNoticias\` e o repositório guardava só um espelho —
+arranjo que existia porque **virtualenv do Python não é relocável** (os scripts
+dentro dele gravam caminhos absolutos na criação), então mover o venv de 1,3 GB
+do Kokoro quebraria a narração. A saída foi **recriar** o ambiente aqui, não
+movê-lo. Levou uns 10 minutos, quase tudo download do torch.
 
 O que **não** é versionado (veja o `.gitignore`): `boletins/`, `logs/`,
 `historico.sqlite`, o venv do Kokoro e o binário do Piper — tudo gerado ou
 reinstalável.
+
+### Se precisar recriar noutra máquina
+
+```powershell
+python -m venv kokoro\venv
+kokoro\venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+kokoro\venv\Scripts\python.exe -m pip install numpy
+kokoro\venv\Scripts\python.exe -m pip install kokoro --no-deps
+kokoro\venv\Scripts\python.exe -m pip install soundfile loguru num2words huggingface-hub transformers misaki scipy spacy
+kokoro\venv\Scripts\python.exe -m pip install phonemizer-fork espeakng-loader
+winget install --id eSpeak-NG.eSpeak-NG -e
+```
+
+O modelo (~314 MB) baixa sozinho na primeira execução, para o cache do
+HuggingFace em `~/.cache/huggingface` — que é compartilhado entre ambientes,
+então recriar o venv **não** rebaixa o modelo.
+
+O `kokoro --no-deps` é obrigatório: o pacote fixa `numpy==1.26.4`, versão sem
+wheel para o Python 3.14, e o pip tenta compilar do zero e falha. Resolvendo as
+dependências à mão ele roda com numpy 2.x.
 
 ## Como o Jarvis consome
 

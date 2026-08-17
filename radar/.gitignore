@@ -17,3 +17,7 @@ teste-voz.wav
 # credenciais
 *.env
 *.key
+
+# cache do Python
+__pycache__/
+*.pyc

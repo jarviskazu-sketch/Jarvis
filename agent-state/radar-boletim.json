@@ -1,51 +1,51 @@
 {
-    "gerado_em":  "2026-08-14T19:11:58",
-    "pasta":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14",
-    "html":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14\\boletim.html",
-    "audio":  "C:\\Users\\MateusKazuATMOEnergi\\RadarDeNoticias\\boletins\\2026-08-14\\boletim.m4a",
+    "gerado_em":  "2026-08-17T15:13:58",
+    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17",
+    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17\\boletim.html",
+    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17\\boletim.m4a",
     "manchetes":  [
                       {
-                          "titulo":  "Susep recebe até 20 de agosto sugestões para nova regra sobre prêmios de resseguro não pagos",
+                          "titulo":  "Esposa não declarada na apólice dirige carro e sinistro é recusado: especialistas explicam quando há perda de cobertura",
                           "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/susep-recebe-ate-20-de-agosto-sugestoes-para-nova-regra-sobre-premios-de-resseguro-nao-pagos/",
-                          "score":  86
+                          "link":  "https://cqcs.com.br/noticia/esposa-nao-declarada-na-apolice-dirige-carro-e-sinistro-e-recusado-especialistas-explicam-quando-ha-perda-de-cobertura/",
+                          "score":  95
                       },
                       {
-                          "titulo":  "Novo Seguros discute o impacto da Lei de Seguros na OAB/ES",
-                          "veiculo":  "Revista Apolice",
-                          "link":  "https://revistaapolice.com.br/2026/08/novo-seguros-discute-o-impacto-da-lei-de-seguros-na-oab-es/",
-                          "score":  84
+                          "titulo":  "Eólica da Elera sofre danos durante evento climático e tem operação suspensa",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/destaques-do-diario/eolica-da-elera-sofre-danos-durante-evento-climatico-e-tem-operacao-suspensa/",
+                          "score":  92
                       },
                       {
-                          "titulo":  "Light Prevê Regulamentação Das ASROs E Perdas Não Técnicas Pela Aneel No 2º Semestre",
-                          "veiculo":  "Cenário Energia",
-                          "link":  "https://news.google.com/rss/articles/CBMixAFBVV95cUxNZXl5blBVMGljZWM0MHNKc1B0ZzNUcmdhbkRxZ0MzMVUtNXk3WDJ5aV9Mck1udTNHVXNMM0FaWllmd1Q1LXNmYjN3X0VEczFsLW9kRTdiaDRiZHBhQnNWQkZpUmhrMG9uNWxJNXcyOFRhaGcyY29SMW51NHotWS1VTnZzWkw1Z3BMN3MxcEF4ZVBRbno1M0prcWpqRnJwV0ZWaFhtUWlEVWJOejFzUjk5T1Y0MWpfVWJ1VUlKWnE0YWJjcTY0?oc=5",
+                          "titulo":  "Ludimila Lima volta à diretoria da Aneel com tarifa branca e prorrogação de hidrelétricas",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/regulacao/ludimila-lima-volta-a-diretoria-da-aneel-com-tarifa-branca-e-prorrogacao-de-hidreletricas/",
+                          "score":  92
+                      },
+                      {
+                          "titulo":  "Projetos solares de 390 MW da CIP perdem autorização sem sequer iniciar obras",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/destaques-do-diario/projetos-solares-de-390-mw-da-cip-perdem-autorizacao-sem-sequer-iniciar-obras/",
+                          "score":  92
+                      },
+                      {
+                          "titulo":  "Revisão das regras de curtailment pela Aneel poderá valer desde novembro de 2025",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/regulacao/revisao-das-regras-de-curtailment-pela-aneel-podera-valer-desde-novembro-de-2025/",
+                          "score":  92
+                      },
+                      {
+                          "titulo":  "Zyntra AI e SDS Soluções: experiência de mercado e tecnologia avançando juntas",
+                          "veiculo":  "CQCS Seguros",
+                          "link":  "https://cqcs.com.br/noticia/zyntra-ai-e-sds-solucoes-experiencia-de-mercado-e-tecnologia-avancando-juntas/",
+                          "score":  90
+                      },
+                      {
+                          "titulo":  "Enel São Paulo tem até esta semana para apresentar defesa em processo de caducidade na Aneel",
+                          "veiculo":  "bandnewstv.uol.com.br",
+                          "link":  "https://news.google.com/rss/articles/CBMiywFBVV95cUxNekM2UUdJNWVQV1VSd0hoQ3dQY3liNnBzV21ZYUF6OHhDWVUzT2ViQ2RsRE1fM05iYmdmdFhUclJ1U280dDQzcm1QWldqdXRDZUNrbkswS3VQcWR0cER1Qy1WRS1KRXAzOVNPTlhtQWgtc1Z1LUZqd2NOd19GSDNRWG5Qb3lJVEUwSHRFUzl1azJndUliVk5rV29jM2ZPSmFFelNEZ0pkWXlvYmMzaXBQdmtQNm9CSnRUQXc4QWFjZUEzNzlscmtSeTd5dw?oc=5",
                           "score":  83
-                      },
-                      {
-                          "titulo":  "Conselho da CCEE vai discutir ‘anomalias’ de segurança de mercado e vaga de novo diretor",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/mercado-energetico/conselho-da-ccee-vai-discutir-anomalias-de-seguranca-de-mercado-e-vaga-de-novo-diretor/",
-                          "score":  77
-                      },
-                      {
-                          "titulo":  "Justiça mantém Máxima Energia na CCEE durante recuperação extrajudicial",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/justica-mantem-maxima-energia-na-ccee-durante-recuperacao-extrajudicial/",
-                          "score":  77
-                      },
-                      {
-                          "titulo":  "Seguro auto para mulheres cai com avanço da personalização na análise de risco",
-                          "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/seguro-auto-para-mulheres-cai-com-avanco-da-personalizacao-na-analise-de-risco/",
-                          "score":  77
-                      },
-                      {
-                          "titulo":  "Painel S.A.: Área técnica da Aneel diz que não avalia se troca da Enel em SP beneficiaria consumidores",
-                          "veiculo":  "Folha de S.Paulo",
-                          "link":  "https://news.google.com/rss/articles/CBMi5AFBVV95cUxQMDhZZ0djcUN6YkRLS0Ita3hUaFdlX1BTXzU1SnJXTy1hM0lQSU5OYmwzVFZhSjNmWGZ3eUZZZXdPMk5zWDVtdzNhRnRrZFZLMm1OVDBSaXJBQ1BrWnJmNTl1clJrMjJqTTc3YUVGYm5SUmowUUt4dS11SW5OYklTQ09Ia29aZmtsS2JzS1UxX1Jvd3V4YmdVSXkxNmM5UzgtY2hfa2pPaWlFLWJhN0tuUVhjZVRJMk5OM1NJeFFnSml0bWNkSHhVbzZ4bDdkQ2UxRmtGTnBZSk1QNm5LbXBmTWdualA?oc=5",
-                          "score":  76
                       }
                   ],
-    "duracao":  "00:05:50"
+    "duracao":  "00:06:33"
 }
