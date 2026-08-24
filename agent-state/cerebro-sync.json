@@ -1,18 +1,23 @@
 {
-  "last_run": "2026-08-17T21:53:00.547Z",
+  "last_run": "2026-08-24T22:03:47.103Z",
   "ok": false,
-  "detail": "49 notas · 15 áreas · 904 arquivos catalogados · ⚠ autenticação expirada · 4 na fila",
-  "count": 49,
+  "detail": "54 notas · 15 áreas · 917 arquivos catalogados · ⚠ login expirado — rode \"claude\" e entre de novo · 5 na fila",
+  "count": 54,
   "fila": [
     {
       "sessao": "1e52b451-63c3-4ee1-ac5b-068bd96ea06e",
       "tentativas": 0,
-      "criado": "2026-08-13T22:26:06.734Z"
+      "criado": "2026-08-18T20:50:18.322Z"
     },
     {
       "sessao": "5199f9d2-caee-4871-8036-9845e757cc6f",
       "tentativas": 0,
-      "criado": "2026-08-14T18:26:11.111Z"
+      "criado": "2026-08-20T17:33:35.910Z"
+    },
+    {
+      "sessao": "8b4fbee6-c89e-456a-991d-8671326fce32",
+      "tentativas": 0,
+      "criado": "2026-08-17T22:28:49.826Z"
     },
     {
       "sessao": "b6b28b24-ae74-453e-941c-d7e587dd81b1",
@@ -27,11 +32,13 @@
   ],
   "auth": {
     "valida": false,
-    "expiraEm": "2026-06-18T03:23:38.369Z"
+    "expiraEm": "2026-06-18T03:23:38.369Z",
+    "temRefresh": false,
+    "precisaLogin": true
   },
   "porArea": {
     "NUCLEO": 3,
-    "ACERVO": 9,
+    "ACERVO": 8,
     "PROJETO": 6,
     "CLIENTE": 3,
     "DEV": 3,
@@ -44,6 +51,6 @@
     "PESSOAL": 1,
     "CONHECIMENTO": 4,
     "PESSOA": 1,
-    "DIARIO": 7
+    "DIARIO": 13
   }
 }

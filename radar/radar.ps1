@@ -37,6 +37,25 @@ function Salvar-Json($obj, $caminho) {
 function Salvar-Fontes($obj) {
   Salvar-Json $obj (Join-Path $base "fontes.json")
 }
+# Perguntar "sobrescrever?" so faz sentido quando tem gente pra responder.
+#
+# NAO TENTE DETECTAR ISSO PELO AMBIENTE. Foi medido: rodando pelo Agendador,
+# [Environment]::UserInteractive da True, [Console]::WindowHeight devolve 49
+# (existe console de verdade) e IsInputRedirected da False. Nenhuma sonda
+# separa "tem gente olhando" de "e a rodada das 07:00" - e um Read-Host la
+# fica pendurado pra sempre, justamente no modo em que ninguem percebe.
+#
+# Entao o contrato e o VERBO, que e deterministico:
+#   radar        -> voce digitou, pergunta antes de sobrescrever
+#   radar tudo   -> modo agendado, refaz sem perguntar
+$modoAgendado = ($cmd -eq "tudo")
+
+function Confirma-Sobrescrever {
+  if ($modoAgendado) { return $true }
+  $r = Read-Host "Ja existe boletim de hoje. Sobrescrever? (s/N)"
+  return ($r -eq "s")
+}
+
 function Notificar($titulo, $msg) {
   try {
     Add-Type -AssemblyName System.Windows.Forms
@@ -55,8 +74,7 @@ switch ($cmd) {
     $hoje = Get-Date -Format "yyyy-MM-dd"
     $pastaHoje = Join-Path $base "boletins\$hoje"
     if (Test-Path (Join-Path $pastaHoje "boletim.md")) {
-      $r = Read-Host "Ja existe boletim de hoje. Sobrescrever? (s/N)"
-      if ($r -ne "s") { Write-Output "Cancelado."; break }
+      if (-not (Confirma-Sobrescrever)) { Write-Output "Cancelado."; break }
     }
     Write-Output "== Coletando =="
     $saida = & $py (Join-Path $base "coletar.py")
@@ -79,8 +97,7 @@ switch ($cmd) {
     # novo vinha com as sobras do dia e ficava DIFERENTE do audio ja gravado.
     $hoje = Get-Date -Format "yyyy-MM-dd"
     if (Test-Path (Join-Path $base "boletins\$hoje\boletim.md")) {
-      $r = Read-Host "Ja existe boletim de hoje. Sobrescrever? (s/N)"
-      if ($r -ne "s") { Write-Output "Cancelado."; break }
+      if (-not (Confirma-Sobrescrever)) { Write-Output "Cancelado."; break }
     }
     Write-Output "== So o boletim escrito =="
     & $py (Join-Path $base "coletar.py")

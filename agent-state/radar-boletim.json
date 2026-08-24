@@ -1,51 +1,51 @@
 {
-    "gerado_em":  "2026-08-17T15:13:58",
-    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17",
-    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17\\boletim.html",
-    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-17\\boletim.m4a",
+    "gerado_em":  "2026-08-24T18:43:08",
+    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24",
+    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.html",
+    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.wav",
     "manchetes":  [
                       {
-                          "titulo":  "Esposa não declarada na apólice dirige carro e sinistro é recusado: especialistas explicam quando há perda de cobertura",
-                          "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/esposa-nao-declarada-na-apolice-dirige-carro-e-sinistro-e-recusado-especialistas-explicam-quando-ha-perda-de-cobertura/",
-                          "score":  95
-                      },
-                      {
-                          "titulo":  "Eólica da Elera sofre danos durante evento climático e tem operação suspensa",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/destaques-do-diario/eolica-da-elera-sofre-danos-durante-evento-climatico-e-tem-operacao-suspensa/",
+                          "titulo":  "ANEEL aprova reajuste de 4,81% na tarifa de energia da Paraíba e novos valores entram em vigor na sexta-feira",
+                          "veiculo":  "ClickPB",
+                          "link":  "https://news.google.com/rss/articles/CBMidEFVX3lxTE1wQ1ZrVEN5UDNGQnRzQzBxdUpQMjVPSzExM2hIM0FDNFFDNWQ4aUkzWXl4TkR6M0dhTUNMalB0MzJ1ajdTazZUZUJRSkhlLTVJY3RkQ2VmaW1SR3dRUmtrZFpzUzQwbHlZWmdTbzg2bnp1TGE4?oc=5",
                           "score":  92
                       },
                       {
-                          "titulo":  "Ludimila Lima volta à diretoria da Aneel com tarifa branca e prorrogação de hidrelétricas",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/regulacao/ludimila-lima-volta-a-diretoria-da-aneel-com-tarifa-branca-e-prorrogacao-de-hidreletricas/",
+                          "titulo":  "Aneel aprova reajuste de 5,20% na tarifa de energia no Maranhão; tarifas entram em vigor sexta-feira (28)",
+                          "veiculo":  "Diário Sul Maranhense",
+                          "link":  "https://news.google.com/rss/articles/CBMi4AFBVV95cUxNM2Z3ZnczLXliWHFxeFdlM0RmLXdmRlM4cV9QdnBqVUZBWTdjeEpkMWtDVHdIUjhWcFU5QndzYV9MSzQzNUhDLVRvclVHY3NJeGxpSTdJNGljbVZ5U00yWmpBem12Qnk2UXduQUFmeER1b2QxOC1rd2EtRHZqaE0tYzVSeFdnRGNha2gzZGs5ZURJaXpxSHJFTmZJaFd3bi1JWEpTa2VHUTNLclBoSVJhZjdELUJTaENJRnR0RmRGODJIT3VPdU9zR0xhNS1mOFlxeUdVcDI2R0VFcnE3UXZScQ?oc=5",
                           "score":  92
                       },
                       {
-                          "titulo":  "Projetos solares de 390 MW da CIP perdem autorização sem sequer iniciar obras",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/destaques-do-diario/projetos-solares-de-390-mw-da-cip-perdem-autorizacao-sem-sequer-iniciar-obras/",
+                          "titulo":  "Prepara o bolso! Aneel aprova reajuste de mais de 5% na tarifa de energia elétrica no Maranhão",
+                          "veiculo":  "Imperatriz Online",
+                          "link":  "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPOXBIOWZrT1NQZG5HUGdmTG8wc0FkUzdONlp5X3BDbWxnLUFndXI1WDJpVGFoOV9XVThqRlYzZWhTcDhZMGg5MUlna2F5RWJFb3htM0lfbzBFRU1QeU5VSTFwQ1NZSXJpbzB0TWVPQUFteUI4MlM2eko4aVd0MmxhUzBITmVPMGVKakstQUhKUHBIMTdrWEQ3WHI5YjlneU5KTmRIaWxNcWpLTGpoRkF4c0VUdzdJV3c3bDBpVkpuTHNOSlE?oc=5",
                           "score":  92
                       },
                       {
-                          "titulo":  "Revisão das regras de curtailment pela Aneel poderá valer desde novembro de 2025",
+                          "titulo":  "Prefeitos da Grande São Paulo vão à Aneel em defesa da Enel",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/regulacao/revisao-das-regras-de-curtailment-pela-aneel-podera-valer-desde-novembro-de-2025/",
+                          "link":  "https://megawhat.uol.com.br/noticias/prefeitos-da-grande-sao-paulo-vao-a-aneel-em-defesa-da-enel/",
                           "score":  92
                       },
                       {
-                          "titulo":  "Zyntra AI e SDS Soluções: experiência de mercado e tecnologia avançando juntas",
-                          "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/zyntra-ai-e-sds-solucoes-experiencia-de-mercado-e-tecnologia-avancando-juntas/",
-                          "score":  90
+                          "titulo":  "Aneel avalia manter com distribuidoras escolha sobre redes subterrâneas",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/distribuicao/aneel-avalia-manter-com-distribuidoras-escolha-sobre-redes-subterraneas/",
+                          "score":  92
                       },
                       {
-                          "titulo":  "Enel São Paulo tem até esta semana para apresentar defesa em processo de caducidade na Aneel",
-                          "veiculo":  "bandnewstv.uol.com.br",
-                          "link":  "https://news.google.com/rss/articles/CBMiywFBVV95cUxNekM2UUdJNWVQV1VSd0hoQ3dQY3liNnBzV21ZYUF6OHhDWVUzT2ViQ2RsRE1fM05iYmdmdFhUclJ1U280dDQzcm1QWldqdXRDZUNrbkswS3VQcWR0cER1Qy1WRS1KRXAzOVNPTlhtQWgtc1Z1LUZqd2NOd19GSDNRWG5Qb3lJVEUwSHRFUzl1azJndUliVk5rV29jM2ZPSmFFelNEZ0pkWXlvYmMzaXBQdmtQNm9CSnRUQXc4QWFjZUEzNzlscmtSeTd5dw?oc=5",
-                          "score":  83
+                          "titulo":  "Aneel rejeita perícia e leva processo de caducidade da Enel SP à fase final",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/distribuicao/aneel-rejeita-pericia-e-leva-processo-de-caducidade-da-enel-sp-a-fase-final/",
+                          "score":  92
+                      },
+                      {
+                          "titulo":  "Aneel mantém tarifa provisória da Pacto enquanto decide sobre bateria",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/aneel-mantem-tarifa-provisoria-da-pacto-enquanto-decide-sobre-bateria/",
+                          "score":  92
                       }
                   ],
-    "duracao":  "00:06:33"
+    "duracao":  "00:05:18"
 }
