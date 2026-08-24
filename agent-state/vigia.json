@@ -1,0 +1,17 @@
+{
+  "last_run": "2026-08-24T23:06:24.443Z",
+  "ok": false,
+  "detail": "1 agente com problema",
+  "count": 1,
+  "alertas": [
+    "Segundo Cérebro: falhando há 6 minutos — login expirado — rode \"claude\" e entre de novo · 5 na fila."
+  ],
+  "problemas_por_id": {
+    "cerebro-sync": {
+      "nome": "Segundo Cérebro",
+      "motivo": "falhando",
+      "desde": "2026-08-24T23:00:45.328Z",
+      "detalhe": "54 notas · 15 áreas · 917 arquivos catalogados · ⚠ login expirado — rode \"claude\" e entre de novo · 5 na fila"
+    }
+  }
+}

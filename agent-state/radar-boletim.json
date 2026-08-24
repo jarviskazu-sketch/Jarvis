@@ -1,5 +1,5 @@
 {
-    "gerado_em":  "2026-08-24T18:43:08",
+    "gerado_em":  "2026-08-24T20:02:18",
     "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24",
     "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.html",
     "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.wav",
@@ -8,12 +8,6 @@
                           "titulo":  "ANEEL aprova reajuste de 4,81% na tarifa de energia da Paraíba e novos valores entram em vigor na sexta-feira",
                           "veiculo":  "ClickPB",
                           "link":  "https://news.google.com/rss/articles/CBMidEFVX3lxTE1wQ1ZrVEN5UDNGQnRzQzBxdUpQMjVPSzExM2hIM0FDNFFDNWQ4aUkzWXl4TkR6M0dhTUNMalB0MzJ1ajdTazZUZUJRSkhlLTVJY3RkQ2VmaW1SR3dRUmtrZFpzUzQwbHlZWmdTbzg2bnp1TGE4?oc=5",
-                          "score":  92
-                      },
-                      {
-                          "titulo":  "Aneel aprova reajuste de 5,20% na tarifa de energia no Maranhão; tarifas entram em vigor sexta-feira (28)",
-                          "veiculo":  "Diário Sul Maranhense",
-                          "link":  "https://news.google.com/rss/articles/CBMi4AFBVV95cUxNM2Z3ZnczLXliWHFxeFdlM0RmLXdmRlM4cV9QdnBqVUZBWTdjeEpkMWtDVHdIUjhWcFU5QndzYV9MSzQzNUhDLVRvclVHY3NJeGxpSTdJNGljbVZ5U00yWmpBem12Qnk2UXduQUFmeER1b2QxOC1rd2EtRHZqaE0tYzVSeFdnRGNha2gzZGs5ZURJaXpxSHJFTmZJaFd3bi1JWEpTa2VHUTNLclBoSVJhZjdELUJTaENJRnR0RmRGODJIT3VPdU9zR0xhNS1mOFlxeUdVcDI2R0VFcnE3UXZScQ?oc=5",
                           "score":  92
                       },
                       {
@@ -45,7 +39,13 @@
                           "veiculo":  "MegaWhat",
                           "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/aneel-mantem-tarifa-provisoria-da-pacto-enquanto-decide-sobre-bateria/",
                           "score":  92
+                      },
+                      {
+                          "titulo":  "Tarifa de energia de distribuidora do RS deve aumentar 22%, calcula Aneel Por Reuters - Investing.com Brasil",
+                          "veiculo":  "Investing.com Brasil - Finanças, Câmbio e Investimentos",
+                          "link":  "https://news.google.com/rss/articles/CBMixgFBVV95cUxPNGFFZWhLNGZJMDRYUXBMbVIyZXdUTUJaRVFFcVk3aTZTalRaWXAxZzNhNEZOcUVHWkFTTmxzRW51RGdZcnNCc0ZUdE4wbjRQMDRDZHhrZUR5dkpETHNBOXo3eG52ZXllVlRmVFlsejRLb0E2SWl3cGM4UjM1ZWEtb21oa0NFWG1KNXl1WE9sa3ZBRzNJNnRrUEZIRTBTaVZMWHl5M1oxdUxYbnd0cmxXZmJFODd0U3N0MkNJRWZrS3gwNUFvZGc?oc=5",
+                          "score":  88
                       }
                   ],
-    "duracao":  "00:05:18"
+    "duracao":  "00:05:31"
 }

@@ -736,11 +736,46 @@ def bullets_do_resumo(item, n=5):
     return frases[:n], False
 
 
+def avisos_do_vigia():
+    """Traz pro boletim o que o vigia do Jarvis viu sobre os OUTROS agentes.
+
+    O boletim e o unico canal que voce abre todo dia por vontade propria.
+    Painel com bolinha vermelha nao serve: o cerebro exibiu "autenticacao
+    expirada" por 67 dias e ninguem viu. Entao o alerta vem aqui, antes da
+    primeira noticia.
+
+    Se der qualquer problema, devolve lista vazia - vigia quebrado nao pode
+    derrubar o boletim."""
+    jarvis = achar_jarvis()
+    if not jarvis:
+        return []
+    arq = os.path.join(jarvis, "agent-state", "vigia.json")
+    try:
+        with open(arq, encoding="utf-8-sig") as f:
+            v = json.load(f)
+    except Exception:
+        return []
+
+    # Quem vigia o vigia: se a antena esta fora do ar, o vigia.json congela e
+    # passaria a dar "esta tudo bem" pra sempre. Silencio dele tambem e alerta.
+    try:
+        idade_h = (datetime.now(timezone.utc)
+                   - datetime.fromisoformat(v["last_run"].replace("Z", "+00:00"))).total_seconds() / 3600
+        if idade_h > 24:
+            return [f"O vigia do Jarvis nao se atualiza ha {int(idade_h/24)} dia(s) - "
+                    f"a antena provavelmente esta fora do ar, entao hoje ninguem esta "
+                    f"conferindo os outros agentes."]
+    except Exception:
+        pass
+
+    return list(v.get("alertas") or [])
+
+
 def avisos_de_continuidade(cfg):
     """Detecta buraco na serie: PC desligado no horario (dias sem boletim) ou
     rodadas seguidas que nao trouxeram nada. Sem isso o boletim mente por
     omissao - parece um dia normal quando na verdade voce ficou dias no escuro."""
-    avisos = []
+    avisos = avisos_do_vigia()
     hoje_str = datetime.now().strftime("%Y-%m-%d")
     try:
         dias = sorted(d for d in os.listdir(BOLETINS)

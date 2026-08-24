@@ -511,6 +511,126 @@ function computeAgentSnapshot(def, cfg) {
   };
 }
 
+/* ============================ O VIGIA ============================
+   Camada 1 do Jarvis-cérebro: a única pergunta que ele faz é
+   "quem devia ter falado hoje e não falou?".
+
+   Por que isso existe: o Radar parou de gerar boletim em 17/08 e ficou
+   7 dias assim sem ninguém notar — porque ninguém procura o que não
+   chega. E o cérebro exibiu "autenticação expirada" no painel por 67
+   dias — porque MOSTRAR não é AVISAR.
+
+   Duas escolhas de projeto que vêm daí:
+
+   1) Ele guarda DESDE QUANDO o agente está ruim. O estado sozinho diz
+      "parado"; o que muda o seu comportamento é "parado há 7 dias".
+      Sem memória do início, todo dia parece o primeiro.
+
+   2) Ele não decide nada nem chama IA. É contagem de tempo, e só. A
+      camada que interpreta vem depois e vai ler ISTO — nunca os 300
+      eventos crus. */
+
+const VIGIA_EVERY_MIN = 5;
+const VIGIA_ARQ = path.join(AGENT_STATE_DIR, "vigia.json");
+
+function plural(n, um, muitos) { return n === 1 ? `1 ${um}` : `${n} ${muitos}`; }
+
+function haQuantoTempo(desdeISO) {
+  const min = (Date.now() - new Date(desdeISO).getTime()) / 60000;
+  if (min < 90) return `há ${plural(Math.max(1, Math.round(min)), "minuto", "minutos")}`;
+  const h = min / 60;
+  if (h < 36) return `há ${plural(Math.round(h), "hora", "horas")}`;
+  return `há ${plural(Math.round(h / 24), "dia", "dias")}`;
+}
+
+function avaliarVigia(cfg) {
+  let anterior = {};
+  try { anterior = lerJSON(VIGIA_ARQ).problemas_por_id || {}; } catch { /* primeira vez */ }
+
+  const agora = new Date().toISOString();
+  const problemas = {};
+  const alertas = [];
+
+  for (const def of AGENT_DEFS) {
+    let snap;
+    try { snap = computeAgentSnapshot(def, cfg); }
+    catch (e) { continue; }
+
+    // "off" é escolha do dono (agente desligado de propósito), não é falha
+    if (snap.state === "off" || snap.state === "ok") continue;
+
+    let motivo;
+    if (snap.state === "stale")      motivo = "mudo";
+    else if (snap.state === "error") motivo = "falhando";
+    else if (snap.state === "idle")  motivo = "nunca rodou";
+    else continue;
+
+    // Desde quando está ruim.
+    //
+    // Para "mudo" dá pra saber de verdade, olhando a última vez que o agente
+    // falou — e isso é retroativo: um Radar parado há 7 dias é reportado como
+    // 7 dias já na PRIMEIRA rodada do vigia, sem precisar tê-lo observado o
+    // tempo todo. Sem isso, reiniciar a antena zeraria a idade de todo
+    // problema e a mensagem viraria sempre "há 1 minuto".
+    //
+    // Para "falhando" não dá: o arquivo de estado só guarda a situação atual,
+    // não desde quando ela dura. Aí o relógio é o do próprio vigia, e a
+    // primeira medição subestima. É uma limitação honesta, não um bug.
+    const antes = anterior[def.id];
+    let desde;
+    if (motivo === "mudo" && snap.last) desde = new Date(snap.last).toISOString();
+    else if (antes && antes.motivo === motivo) desde = antes.desde;
+    else desde = agora;
+
+    problemas[def.id] = { nome: def.nome, motivo, desde, detalhe: snap.detail || "" };
+
+    const quanto = haQuantoTempo(desde);
+    if (motivo === "mudo") {
+      const esperado = def.every_min >= 1440
+        ? `devia rodar todo dia`
+        : `devia rodar a cada ${def.every_min} min`;
+      alertas.push(`${def.nome}: sem dar sinal ${quanto} — ${esperado}.`);
+    } else if (motivo === "falhando") {
+      // Só o PROBLEMA, não o status inteiro. O detalhe do cérebro é
+      // "54 notas · 15 áreas · 917 arquivos · ⚠ login expirado · 5 na fila":
+      // colado inteiro no alerta, vira ruído — e o boletim LÊ isso em voz
+      // alta, então "novecentos e dezessete arquivos catalogados" entra no
+      // meio de um aviso. Depois do "⚠" está o que interessa.
+      let porque = snap.detail || "";
+      const i = porque.indexOf("⚠");
+      if (i >= 0) porque = porque.slice(i + 1).trim();
+      if (porque.length > 90) porque = porque.slice(0, 90).trim() + "...";
+      alertas.push(`${def.nome}: falhando ${quanto}${porque ? " — " + porque : ""}.`);
+    } else {
+      alertas.push(`${def.nome}: nunca rodou.`);
+    }
+  }
+
+  const saida = {
+    last_run: agora,
+    ok: alertas.length === 0,
+    detail: alertas.length ? `${plural(alertas.length, "agente com problema", "agentes com problema")}` : "todos os agentes respondendo",
+    count: alertas.length,
+    alertas,
+    problemas_por_id: problemas
+  };
+
+  try {
+    fs.writeFileSync(VIGIA_ARQ, JSON.stringify(saida, null, 2), "utf8");
+  } catch (e) {
+    console.log("[vigia] nao consegui gravar vigia.json:", e.message);
+  }
+  return saida;
+}
+
+function rodarVigia() {
+  let cfg = {};
+  try { cfg = lerJSON(path.join(__dirname, "agents-config.json")); } catch { /* sem config */ }
+  const r = avaliarVigia(cfg);
+  if (r.alertas.length) console.log("[vigia] " + r.alertas.join(" | "));
+  return r;
+}
+
 /* ============ CLIENTE IMAP MÍNIMO (só tls nativo) ============ */
 class ImapClient {
   constructor(host) {
@@ -909,6 +1029,15 @@ const server = http.createServer((req, res) => {
      caminho de disco a partir de http://. Só serve o arquivo que o próprio
      radar registrou — não aceita caminho vindo da URL, senão viraria uma
      porta pra ler qualquer arquivo da máquina. */
+  // O vigia: quem está mudo ou falhando, e desde quando.
+  if (req.method === "GET" && parsedReq.pathname === "/api/vigia") {
+    let cfg = {};
+    try { cfg = lerJSON(path.join(__dirname, "agents-config.json")); } catch { /* sem config */ }
+    res.writeHead(200, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(avaliarVigia(cfg)));
+    return;
+  }
+
   if (req.method === "GET" && parsedReq.pathname === "/api/radar/audio") {
     try {
       const meta = lerJSON(path.join(AGENT_STATE_DIR, "radar-boletim.json"));
@@ -1070,4 +1199,9 @@ server.listen(PORT, "127.0.0.1", () => {
   setInterval(() => runNewsAgent().catch((e) => console.log("[agentes] erro news-radar:", e.message)), NEWS_AGENT_EVERY_MIN * 60 * 1000);
   setInterval(() => runAgendaAgent().catch((e) => console.log("[agentes] erro agenda-sync:", e.message)), AGENDA_AGENT_EVERY_MIN * 60 * 1000);
   setInterval(() => runCerebroAgent().catch((e) => console.log("[agentes] erro cerebro-sync:", e.message)), CEREBRO_AGENT_EVERY_MIN * 60 * 1000);
+
+  // O vigia roda DEPOIS da primeira rodada dos agentes: perguntar antes disso
+  // marcaria todo mundo como "nunca rodou" a cada reinício da antena.
+  setTimeout(rodarVigia, 20000);
+  setInterval(rodarVigia, VIGIA_EVERY_MIN * 60 * 1000);
 });
