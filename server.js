@@ -459,6 +459,21 @@ const AGENT_DEFS = [
     isOff: () => !fs.existsSync(path.join(AGENT_STATE_DIR, "radar-noticias.json")),
     offDetail: "ainda não rodou — agende com: radar agendar",
     run: null
+  },
+  {
+    // Camada 3: interpreta o que o Vigia apontou e escreve no diário do cérebro.
+    // Quem dispara é o Agendador do Windows (07:20, depois do Radar), por isso
+    // run: null. Ele entra AQUI de propósito — o analista também precisa ser
+    // vigiado, senão vira mais um que morre em silêncio.
+    id: "analista",
+    nome: "Analista do dia",
+    icon: "🔎",
+    faz: "Lê o que o Vigia marcou como estranho e escreve a interpretação no diário do segundo cérebro, com IA local (Ollama).",
+    every_min: 24 * 60,
+    arquivo: "agent-state/analista.json",
+    isOff: () => !fs.existsSync(path.join(__dirname, "analista.py")),
+    offDetail: "analista.py não encontrado",
+    run: null
   }
 ];
 
