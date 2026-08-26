@@ -28,16 +28,27 @@ ESTADO = os.path.join(BASE, "agent-state")
 DIARIO = r"D:\SEGUNDO-CEREBRO\90-DIARIO"
 
 OLLAMA = "http://127.0.0.1:11434/api/generate"
-# qwen2.5:7b, escolhido medindo os tres na MESMA entrada (2 problemas reais):
-#   llama3.2:3b  15s  inventou "quinta posicao da fila", leu o comando `claude`
-#                     como nome de usuario e trocou o papel dos robos. Tres
-#                     rodadas de ajuste de prompt nao resolveram.
-#   qwen2.5:3b   32s  pior: inventou que o cerebro mexe na agenda e perdeu a
-#                     instrucao acionavel.
-#   qwen2.5:7b   73s  fatos corretos, terceira pessoa, comeca pelo que quebrou.
-# 73s uma vez por dia, as 07:00, com ninguem esperando na frente da tela - e a
-# mesma troca que ja foi aceita no Kokoro. Ver [[vozes-do-radar]].
-MODELO = "qwen2.5:7b"
+# CASCATA DE MODELOS, do melhor pro que cabe em qualquer lugar.
+#
+# Mesmo padrao das vozes do Radar (Kokoro > Piper > SAPI): tenta o melhor, cai
+# pro seguinte se nao der, e nunca fica sem entregar. Aqui a razao e memoria.
+#
+# Esta maquina vive com pouca RAM livre - o gateway do Power BI e o Analysis
+# Services seguram varios GB o dia inteiro. Em 26/08 o analista quebrou com
+# "failed to allocate buffer of size 3121348608": o qwen2.5:7b nao coube.
+#
+# Qualidade medida na mesma entrada (2 problemas reais):
+#   qwen2.5:7b   73s  fatos corretos, terceira pessoa, comeca pelo defeito
+#   llama3.2:3b  15s  entende o essencial, mas escorrega em detalhe
+#   qwen2.5:3b   32s  descartado: inventou que o cerebro mexe na agenda
+#
+# O "precisa_gb" e o peso do modelo mais folga pro cache de contexto e pro
+# resto do sistema. Sem essa checagem previa, a tentativa condenada ainda
+# custa o tempo de carregar o arquivo do disco antes de estourar.
+MODELOS = [
+    {"nome": "qwen2.5:7b",  "precisa_gb": 6.0},
+    {"nome": "llama3.2:3b", "precisa_gb": 3.0},
+]
 
 # num_ctx pequeno de proposito: o llama3.2 tem janela de 128k e o Ollama
 # reserva memoria pro cache de contexto ANTES de saber o tamanho do texto.
@@ -117,9 +128,54 @@ def desambiguar(texto):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def ram_livre_gb():
+    """Memoria fisica disponivel, via API do proprio Windows (ctypes e stdlib).
+    Devolve None se nao der pra medir - nesse caso a gente tenta assim mesmo em
+    vez de desistir por precaucao."""
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        m = MEMORYSTATUSEX()
+        m.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+            return None
+        return m.ullAvailPhys / (1024 ** 3)
+    except Exception:
+        return None
+
+
 def pedir_analise(problemas):
-    """Chama o Ollama com os PROBLEMAS - nunca com os numeros saudaveis."""
+    """Percorre a cascata de modelos e devolve (texto, modelo_usado, erro).
+
+    Cai pro proximo tanto por falta de memoria PREVISTA (checagem antes) quanto
+    por falha na hora (o Ollama pode estourar mesmo com a conta fechando, se
+    outro programa pegar a memoria no meio)."""
     problemas = [desambiguar(p) for p in problemas]
+    livre = ram_livre_gb()
+    ultimo_erro = "nenhum modelo tentado"
+
+    for m in MODELOS:
+        if livre is not None and livre < m["precisa_gb"]:
+            ultimo_erro = (f"sem memória livre suficiente: {livre:.1f} GB disponíveis, "
+                           f"o menor modelo precisa de {MODELOS[-1]['precisa_gb']:.0f} GB")
+            continue
+        txt, erro = _chamar_ollama(m["nome"], problemas)
+        if txt:
+            return txt, m["nome"], None
+        ultimo_erro = f"{m['nome']}: {erro}"
+
+    return None, None, ultimo_erro
+
+
+def _chamar_ollama(modelo, problemas):
+    """Uma tentativa, num modelo so."""
     # O prompt e chato de proposito. Modelo de 3B improvisa quando sobra espaco:
     # sem o "fale na terceira pessoa" ele escrevia "isso me preocupa" como se
     # fosse o proprio dono; sem o "assunto e o sistema" ele comentava o mundo.
@@ -142,7 +198,7 @@ def pedir_analise(problemas):
         "- Texto corrido, sem lista e sem titulo."
     )
     corpo = {
-        "model": MODELO, "prompt": prompt, "stream": False,
+        "model": modelo, "prompt": prompt, "stream": False,
         "keep_alive": KEEP_ALIVE,
         "options": {"num_ctx": NUM_CTX, "temperature": 0.3, "num_predict": 300},
     }
@@ -165,7 +221,7 @@ def pedir_analise(problemas):
         return None, f"{type(e).__name__}: {e}"
 
 
-def escrever_no_diario(analise, problemas, numeros, erro):
+def escrever_no_diario(analise, problemas, numeros, erro, modelo=None):
     """Grava no diario do dia, SUBSTITUINDO a analise anterior se ja houver uma.
 
     Substituir em vez de acrescentar importa: rodar duas vezes no mesmo dia
@@ -200,6 +256,11 @@ def escrever_no_diario(analise, problemas, numeros, erro):
     if problemas:
         bloco += ["", "**Problemas:**", ""] + [f"- {p}" for p in problemas]
     bloco += ["", "**Números do dia:**", ""] + [f"- {n}" for n in numeros]
+
+    # Qual modelo escreveu fica registrado: um texto do 3B nao pode ser lido
+    # depois como se tivesse a precisao do 7B.
+    if modelo:
+        bloco += ["", f"<sub>Análise escrita por {modelo}, local.</sub>"]
     bloco.append("")
 
     with open(caminho, "w", encoding="utf-8") as f:
@@ -230,21 +291,34 @@ def main():
     # Nao e economia de CPU: e a regra de que a IA so explica o que a contagem
     # ja apontou. Pedir "analise" de um dia normal e pedir pra ela inventar
     # alguma coisa - e ela inventa. O registro do dia sai igual, sem opiniao.
-    analise, erro = (None, None)
+    analise, modelo, erro = (None, None, None)
     if problemas:
-        analise, erro = pedir_analise(problemas)
+        analise, modelo, erro = pedir_analise(problemas)
 
-    caminho = escrever_no_diario(analise, problemas, numeros, erro)
+    caminho = escrever_no_diario(analise, problemas, numeros, erro, modelo)
 
     if not problemas:
         escrever_estado(True, "dia sem problemas — registro gravado", 0)
         print(f"Nenhum agente com problema. Registro em {caminho}")
     elif analise:
-        escrever_estado(True, f"{len(problemas)} problema(s) interpretado(s)", len(problemas))
-        print(f"Análise escrita em {caminho}\n\n{analise}")
+        escrever_estado(True, f"{len(problemas)} problema(s) interpretado(s) por {modelo}", len(problemas))
+        print(f"Análise escrita em {caminho} ({modelo})\n\n{analise}")
     else:
-        escrever_estado(False, f"motor de análise fora: {erro}", len(problemas))
-        print(f"Registro em {caminho}, mas a análise falhou: {erro}")
+        # ok=True de proposito quando foi falta de memoria.
+        # Maquina cheia nao e defeito do analista: ele fez o que dava, gravou os
+        # fatos e disse por que nao interpretou. Marcar como falha encheria o
+        # boletim de alarme sobre uma coisa que ninguem precisa consertar - e
+        # alarme que toca a toa e alarme que se aprende a ignorar.
+        # ok = foi_memoria: maquina cheia conta como sucesso (fez o que dava),
+        # motor quebrado conta como falha (precisa de conserto e o Vigia deve
+        # gritar). Na primeira versao isso estava invertido e o analista se
+        # acusava de defeito toda vez que o computador estava ocupado.
+        foi_memoria = "memória" in (erro or "")
+        escrever_estado(foi_memoria,
+                        ("registro gravado sem análise — " + erro) if foi_memoria
+                        else f"motor de análise fora: {erro}",
+                        len(problemas))
+        print(f"Registro em {caminho}, sem análise: {erro}")
     return 0
 
 

@@ -1,51 +1,51 @@
 {
-    "gerado_em":  "2026-08-24T20:02:18",
-    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24",
-    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.html",
-    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-24\\boletim.wav",
+    "gerado_em":  "2026-08-26T10:08:27",
+    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26",
+    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26\\boletim.html",
+    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26\\boletim.wav",
     "manchetes":  [
                       {
-                          "titulo":  "ANEEL aprova reajuste de 4,81% na tarifa de energia da Paraíba e novos valores entram em vigor na sexta-feira",
-                          "veiculo":  "ClickPB",
-                          "link":  "https://news.google.com/rss/articles/CBMidEFVX3lxTE1wQ1ZrVEN5UDNGQnRzQzBxdUpQMjVPSzExM2hIM0FDNFFDNWQ4aUkzWXl4TkR6M0dhTUNMalB0MzJ1ajdTazZUZUJRSkhlLTVJY3RkQ2VmaW1SR3dRUmtrZFpzUzQwbHlZWmdTbzg2bnp1TGE4?oc=5",
-                          "score":  92
+                          "titulo":  "Mais carros nas ruas, mais oportunidades para o corretor: como aproveitar o crescimento do mercado automotivo",
+                          "veiculo":  "CQCS Seguros",
+                          "link":  "https://cqcs.com.br/noticia/mais-carros-nas-ruas-mais-oportunidades-para-o-corretor-como-aproveitar-o-crescimento-do-mercado-automotivo/",
+                          "score":  99
                       },
                       {
-                          "titulo":  "Prepara o bolso! Aneel aprova reajuste de mais de 5% na tarifa de energia elétrica no Maranhão",
-                          "veiculo":  "Imperatriz Online",
-                          "link":  "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPOXBIOWZrT1NQZG5HUGdmTG8wc0FkUzdONlp5X3BDbWxnLUFndXI1WDJpVGFoOV9XVThqRlYzZWhTcDhZMGg5MUlna2F5RWJFb3htM0lfbzBFRU1QeU5VSTFwQ1NZSXJpbzB0TWVPQUFteUI4MlM2eko4aVd0MmxhUzBITmVPMGVKakstQUhKUHBIMTdrWEQ3WHI5YjlneU5KTmRIaWxNcWpLTGpoRkF4c0VUdzdJV3c3bDBpVkpuTHNOSlE?oc=5",
-                          "score":  92
+                          "titulo":  "Número de empresas Corretoras de Seguros em atividade volta a cair",
+                          "veiculo":  "CQCS Seguros",
+                          "link":  "https://cqcs.com.br/noticia/numero-de-empresas-corretoras-de-seguros-em-atividade-volta-a-cair/",
+                          "score":  90
                       },
                       {
-                          "titulo":  "Prefeitos da Grande São Paulo vão à Aneel em defesa da Enel",
+                          "titulo":  "Aneel reduz até 10,63% na tarifa de energia de cinco distribuidoras a partir de quarta-feira (26)",
+                          "veiculo":  "Times Brasil | CNBC",
+                          "link":  "https://news.google.com/rss/articles/CBMixwFBVV95cUxOeDZ5ZmRiQV83dVhITko4OHVsT3BtQW5XVDJMU0VhNEtHVlFoWUtRRXBDS1BVQllSQk9oLWdfUExMU0dreTFBLW9Ld0pQR1h4R05GU29ORWdRZzRhWnBGbFBacmVJbXItZUR6NENBdmhvNkVKYjcwZ0xPMzMzNkotdWtUbW5WaWozODBGcjdVNkJRc2lnLU1XWks1cWJRd1c0V2V3dmlaR1Bvc3I0VFJ3VkE5UFJsTlRNNkl1ai1yYnFYNnpJS0tZ?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "ANEEL Reduz Tarifa De Energia Em 5 Distribuidoras Do Norte E Nordeste Com Verbas De UBP",
+                          "veiculo":  "Cenário Energia",
+                          "link":  "https://news.google.com/rss/articles/CBMipAFBVV95cUxPQmhWdllhaU5oYW8wbEg5dHFQbWZSVEkxSnNybC14aXpLQXp0VDJ5QjVHbDM1bWlCZnhyWjc5VWx4YnUwSUk4VENHSFAwRUJ6bFBacHlGNmF5RzQ0RmpsMUU3TDgtRzlIWndRajFaSnJVUXlLZ3VWSkpiQzdicUdpdmRBZFlhVFVVWTAxS3o0Q0FLYUdJeXVFYkZyczZibGFvaWlFeg?oc=5",
+                          "score":  85
+                      },
+                      {
+                          "titulo":  "Casa dos Ventos inicia operação comercial de 650 MW em solares",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/noticias/prefeitos-da-grande-sao-paulo-vao-a-aneel-em-defesa-da-enel/",
-                          "score":  92
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/casa-dos-ventos-inicia-operacao-comercial-de-650-mw-em-solares/",
+                          "score":  85
                       },
                       {
-                          "titulo":  "Aneel avalia manter com distribuidoras escolha sobre redes subterrâneas",
+                          "titulo":  "Aneel avalia incluir hidrelétricas e térmicas no rateio das baterias do LRCap",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/distribuicao/aneel-avalia-manter-com-distribuidoras-escolha-sobre-redes-subterraneas/",
-                          "score":  92
+                          "link":  "https://megawhat.uol.com.br/armazenamento/aneel-avalia-incluir-hidreletricas-e-termicas-no-rateio-das-baterias-do-lrcap/",
+                          "score":  85
                       },
                       {
-                          "titulo":  "Aneel rejeita perícia e leva processo de caducidade da Enel SP à fase final",
+                          "titulo":  "ISA Energia recebe aval para oferecer soluções com BESS a empresas",
                           "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/distribuicao/aneel-rejeita-pericia-e-leva-processo-de-caducidade-da-enel-sp-a-fase-final/",
-                          "score":  92
-                      },
-                      {
-                          "titulo":  "Aneel mantém tarifa provisória da Pacto enquanto decide sobre bateria",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/aneel-mantem-tarifa-provisoria-da-pacto-enquanto-decide-sobre-bateria/",
-                          "score":  92
-                      },
-                      {
-                          "titulo":  "Tarifa de energia de distribuidora do RS deve aumentar 22%, calcula Aneel Por Reuters - Investing.com Brasil",
-                          "veiculo":  "Investing.com Brasil - Finanças, Câmbio e Investimentos",
-                          "link":  "https://news.google.com/rss/articles/CBMixgFBVV95cUxPNGFFZWhLNGZJMDRYUXBMbVIyZXdUTUJaRVFFcVk3aTZTalRaWXAxZzNhNEZOcUVHWkFTTmxzRW51RGdZcnNCc0ZUdE4wbjRQMDRDZHhrZUR5dkpETHNBOXo3eG52ZXllVlRmVFlsejRLb0E2SWl3cGM4UjM1ZWEtb21oa0NFWG1KNXl1WE9sa3ZBRzNJNnRrUEZIRTBTaVZMWHl5M1oxdUxYbnd0cmxXZmJFODd0U3N0MkNJRWZrS3gwNUFvZGc?oc=5",
-                          "score":  88
+                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/isa-energia-recebe-aval-para-oferecer-solucoes-com-bess-a-empresas/",
+                          "score":  85
                       }
                   ],
-    "duracao":  "00:05:31"
+    "duracao":  "00:05:25"
 }
