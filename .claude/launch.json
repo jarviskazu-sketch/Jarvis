@@ -2,10 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
+      // Modo anexar: sem comando, so a URL. O `python -m http.server 8899`
+      // ja fica de pe por conta propria, e tentar subir outro so colidia na
+      // porta. Alem disso o -m http.server nao le a variavel PORT, entao
+      // autoPort tambem nao resolveria -- anexar e o unico caminho certo.
       "name": "jarvis",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8899"],
-      "port": 8899
+      "port": 8899,
+      "url": "http://localhost:8899"
     },
     {
       "name": "jarvis-antena",
@@ -13,6 +16,18 @@
       "runtimeArgs": ["server.js"],
       "port": 4242,
       "url": "http://127.0.0.1:4242"
+    },
+    {
+      "name": "receita",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "D:\\8 - Claude - projeto\\Receita\\node_modules\\vite\\bin\\vite.js",
+        "D:\\8 - Claude - projeto\\Receita",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
     }
   ]
 }

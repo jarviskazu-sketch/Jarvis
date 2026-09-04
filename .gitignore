@@ -18,3 +18,6 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Cache do wrangler, caso ele rode a partir daqui por engano
+.wrangler/

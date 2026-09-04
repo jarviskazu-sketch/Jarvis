@@ -1,6 +1,6 @@
 {
-  "last_run": "2026-08-26T13:36:32.945340Z",
+  "last_run": "2026-09-03T12:31:36.300334Z",
   "ok": true,
-  "detail": "registro gravado sem análise — sem memória livre suficiente: 0.9 GB disponíveis, o menor modelo precisa de 3 GB",
-  "count": 1
+  "detail": "registro gravado sem análise — sem memória livre suficiente: 0.5 GB disponíveis, o menor modelo precisa de 3 GB",
+  "count": 3
 }

@@ -1,51 +1,51 @@
 {
-    "gerado_em":  "2026-08-26T10:08:27",
-    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26",
-    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26\\boletim.html",
-    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-08-26\\boletim.wav",
+    "gerado_em":  "2026-09-03T09:31:54",
+    "pasta":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-09-03",
+    "html":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-09-03\\boletim.html",
+    "audio":  "D:\\8 - Claude - projeto\\Jarvis\\radar\\boletins\\2026-09-03\\boletim.wav",
     "manchetes":  [
                       {
-                          "titulo":  "Mais carros nas ruas, mais oportunidades para o corretor: como aproveitar o crescimento do mercado automotivo",
-                          "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/mais-carros-nas-ruas-mais-oportunidades-para-o-corretor-como-aproveitar-o-crescimento-do-mercado-automotivo/",
-                          "score":  99
+                          "titulo":  "Aneel vai coordenar GT para investigar MMGD à revelia",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/geracao/micro-e-minigeracao-distribuida/aneel-vai-coordenar-gt-para-investigar-mmgd-a-revelia/",
+                          "score":  100
                       },
                       {
-                          "titulo":  "Número de empresas Corretoras de Seguros em atividade volta a cair",
+                          "titulo":  "CMSE determina aprimoramento da resposta da demanda em 2027",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/mercado-energetico/cmse-determina-aprimoramento-da-resposta-da-demanda-em-2027/",
+                          "score":  92
+                      },
+                      {
+                          "titulo":  "Seguro: quando começa a contar o prazo de 30 dias para a indenização?",
                           "veiculo":  "CQCS Seguros",
-                          "link":  "https://cqcs.com.br/noticia/numero-de-empresas-corretoras-de-seguros-em-atividade-volta-a-cair/",
+                          "link":  "https://cqcs.com.br/noticia/seguro-quando-comeca-a-contar-o-prazo-de-30-dias-para-a-indenizacao/",
                           "score":  90
                       },
                       {
-                          "titulo":  "Aneel reduz até 10,63% na tarifa de energia de cinco distribuidoras a partir de quarta-feira (26)",
-                          "veiculo":  "Times Brasil | CNBC",
-                          "link":  "https://news.google.com/rss/articles/CBMixwFBVV95cUxOeDZ5ZmRiQV83dVhITko4OHVsT3BtQW5XVDJMU0VhNEtHVlFoWUtRRXBDS1BVQllSQk9oLWdfUExMU0dreTFBLW9Ld0pQR1h4R05GU29ORWdRZzRhWnBGbFBacmVJbXItZUR6NENBdmhvNkVKYjcwZ0xPMzMzNkotdWtUbW5WaWozODBGcjdVNkJRc2lnLU1XWks1cWJRd1c0V2V3dmlaR1Bvc3I0VFJ3VkE5UFJsTlRNNkl1ai1yYnFYNnpJS0tZ?oc=5",
+                          "titulo":  "Walter Polido lança livro sobre seguro de responsabilidade civil e os impactos da nova legislação",
+                          "veiculo":  "Sonho Seguro",
+                          "link":  "https://www.sonhoseguro.com.br/2026/09/walter-polido-lanca-livro-sobre-seguro-de-responsabilidade-civil-e-os-impactos-da-nova-legislacao/",
+                          "score":  88
+                      },
+                      {
+                          "titulo":  "Aneel libera Termo Norte II de penalidade por falta de combustível",
+                          "veiculo":  "MegaWhat",
+                          "link":  "https://megawhat.uol.com.br/geracao/termica/aneel-libera-termo-norte-ii-de-penalidade-por-falta-de-combustivel/",
                           "score":  85
                       },
                       {
-                          "titulo":  "ANEEL Reduz Tarifa De Energia Em 5 Distribuidoras Do Norte E Nordeste Com Verbas De UBP",
+                          "titulo":  "ANEEL aprova redução de 14,67% nas tarifas da Roraima Energia após recálculo pela Lei da UBP",
                           "veiculo":  "Cenário Energia",
-                          "link":  "https://news.google.com/rss/articles/CBMipAFBVV95cUxPQmhWdllhaU5oYW8wbEg5dHFQbWZSVEkxSnNybC14aXpLQXp0VDJ5QjVHbDM1bWlCZnhyWjc5VWx4YnUwSUk4VENHSFAwRUJ6bFBacHlGNmF5RzQ0RmpsMUU3TDgtRzlIWndRajFaSnJVUXlLZ3VWSkpiQzdicUdpdmRBZFlhVFVVWTAxS3o0Q0FLYUdJeXVFYkZyczZibGFvaWlFeg?oc=5",
-                          "score":  85
+                          "link":  "https://news.google.com/rss/articles/CBMizAFBVV95cUxOVnUyZVVxQzNXc0hfMkJvMmZwVHdDOURBLTJJYi1pOFRQWFlBYm4wbWFuSnAzTXdLa2NIUEN4YTZBQTUwMHktZjRrM0htcjVmRGtKLWZqUWJhODNDUUE4QW15ZXRNYVJBQVptalVTbkhVZDlzTWFPSlZsM1VHZk1nSUEySXJ2T0Nka0FfWlJtc2VNVGRkM1pWUnlUdkVVOVR4TWU3YlJfQzVDemFhX3A4RjlkS19kbU1SUkdsdlZ1eUhacV9JUnpybDdWNUE?oc=5",
+                          "score":  76
                       },
                       {
-                          "titulo":  "Casa dos Ventos inicia operação comercial de 650 MW em solares",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/casa-dos-ventos-inicia-operacao-comercial-de-650-mw-em-solares/",
-                          "score":  85
-                      },
-                      {
-                          "titulo":  "Aneel avalia incluir hidrelétricas e térmicas no rateio das baterias do LRCap",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/armazenamento/aneel-avalia-incluir-hidreletricas-e-termicas-no-rateio-das-baterias-do-lrcap/",
-                          "score":  85
-                      },
-                      {
-                          "titulo":  "ISA Energia recebe aval para oferecer soluções com BESS a empresas",
-                          "veiculo":  "MegaWhat",
-                          "link":  "https://megawhat.uol.com.br/economia-e-politica/empresas/isa-energia-recebe-aval-para-oferecer-solucoes-com-bess-a-empresas/",
-                          "score":  85
+                          "titulo":  "Susep aborda avanços e desafios do setor de seguros em evento sobre regulação",
+                          "veiculo":  "SEGS Portal Nacional",
+                          "link":  "https://news.google.com/rss/articles/CBMitwFBVV95cUxQZVIxNHdVUFBfZUFOdUlQRXpza3RHNTZSU2VJWWhfMzIzVkFvRTZYVk1GZ2NINDNSNXpHRGVteE00MDVVRVg0SmlZYUJWR1I0QkZTVTZuMDIyTkRkdzJfXzRtRFlGSGxQVVFpWnMyUklSYVpSVnduUVkwcmJEOWc1eXNPRW5mQnFHMEN0clR1c3FPYVlkVkJSdk82dDVZZUs2eWJjLTdUaElfdVBHUEIzdlQxbHdoMVXSAbwBQVVfeXFMT005Q0VESTBhY1dqZGxWMlRNUWV1QllnS1N5Z1RqMENLdlZsOG5lcjJkNDFRTGVmOHZvV2MxNnpHVHRWQlU4UHo3U2wyeGRSOUFWQmRjQmxxUHJkbjlNMTNYVExtMExZeEwwOWZpRmZPTGwwYXpXNVhLc016S3dybnhtVUxWamxhUUtydDdyYnlpeWZ5VjJqQjB6dmpjNVRnTUhZX2RFNndZRlBGVlNkUVgtcmZrUENnYVoxZ0Y?oc=5",
+                          "score":  76
                       }
                   ],
-    "duracao":  "00:05:25"
+    "duracao":  "00:06:40"
 }

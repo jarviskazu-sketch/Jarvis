@@ -876,6 +876,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <button class="tabbtn" data-tab="agents">🛰 AGENTES</button>
     <button class="tabbtn" data-tab="cerebro">🧠 CÉREBRO</button>
     <button class="tabbtn" data-tab="estudio">✍ ESTÚDIO</button>
+    <button class="tabbtn" data-tab="primeiro">🥬 PRIMEIRO</button>
     <button class="tabbtn" data-tab="tokens" data-external="ai-token-control.html" title="Abre o painel AI Token Control em outra aba">🪙 TOKENS</button>
   </nav>
 
@@ -1062,6 +1063,37 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     </div>
   </section>
 </div>
+
+<!-- MÓDULO "primeiro" — a geladeira na ordem certa.
+
+     Vai num iframe, e não reescrito como painel nativo, por dois motivos:
+     o módulo é uma aplicação React inteira com identidade visual própria
+     (editorial, fundo creme) que brigaria com o tema escuro do Jarvis se
+     dividisse a mesma folha de estilo; e assim o MESMO código que sobe na
+     Cloudflare roda aqui, sem uma segunda versão para manter.
+
+     O src só é preenchido no primeiro clique da aba — carregar a aplicação
+     inteira na abertura do Jarvis atrasaria o que a pessoa veio ver. -->
+<section class="panelWrap hidden" id="panel-primeiro">
+  <div class="panelHead">
+    <div>
+      <h2>🥬 PRIMEIRO</h2>
+      <span class="sub">fotografe a geladeira · cozinhe pelo que vence antes</span>
+    </div>
+    <div class="actions">
+      <button id="primeiroRecarregarBtn" title="Recarregar o módulo">⟳</button>
+      <button id="primeiroAbrirBtn" title="Abrir em uma aba separada">⧉</button>
+    </div>
+  </div>
+  <div id="primeiroAviso" class="offlineNote hidden"></div>
+  <iframe
+    id="primeiroFrame"
+    title="primeiro — sua geladeira, na ordem certa"
+    style="width:100%;height:min(1100px,calc(100vh - 210px));border:1px solid var(--border,#1c2740);border-radius:14px;background:#f3f0e7;display:block;"
+    allow="camera"
+    referrerpolicy="no-referrer"
+  ></iframe>
+</section>
 
 <div id="editorOverlay" class="hidden">
   <div id="editorBox">
@@ -2476,7 +2508,7 @@ function offlineNoteHTML(){
 /* ============ TABS ============ */
 function switchTab(tab){
   document.querySelectorAll(".tabbtn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["agenda","emails","news","digest","agents","cerebro","estudio"].forEach(t => {
+  ["agenda","emails","news","digest","agents","cerebro","estudio","primeiro"].forEach(t => {
     const p = document.getElementById("panel-"+t);
     if(p) p.classList.toggle("hidden", t !== tab);
   });
@@ -2486,9 +2518,48 @@ document.querySelectorAll(".tabbtn[data-tab]").forEach(btn => btn.addEventListen
   if(btn.dataset.external){ window.open(btn.dataset.external, "_blank"); return; }
   switchTab(btn.dataset.tab);
   if(btn.dataset.tab === "estudio") renderVozPerfil();
+  if(btn.dataset.tab === "primeiro") abrirPrimeiro();
   if(btn.dataset.tab === "cerebro"){ cerebroEstado(); fetchCerebroGrafo(); }
   else{ stopCerebroLoop(); }
 }));
+
+/* ══════════════════════════════════════════════════════════════
+   MÓDULO "primeiro" — a geladeira na ordem certa.
+
+   A antena serve a aplicação em /primeiro e a API dela em /api/primeiro.
+   Aqui só cuidamos de quando carregar e do que dizer quando não dá.
+   ══════════════════════════════════════════════════════════════ */
+const PRIMEIRO_URL = ANTENNA_BASE + "/primeiro/";
+let primeiroCarregado = false;
+
+async function abrirPrimeiro(forcar){
+  const frame = document.getElementById("primeiroFrame");
+  const aviso = document.getElementById("primeiroAviso");
+  if(!frame) return;
+
+  if(primeiroCarregado && !forcar) return;
+
+  // Confere a antena ANTES de apontar o iframe: sem isso o quadro mostraria
+  // a página de erro do navegador, que não diz o que fazer a respeito.
+  try{
+    const r = await fetch(ANTENNA_BASE + "/ping", { cache: "no-store" });
+    if(!r.ok) throw new Error("ping falhou");
+  }catch{
+    frame.removeAttribute("src");
+    aviso.innerHTML = 'ANTENA OFFLINE — abra um terminal na pasta do Jarvis e rode <code>node server.js</code> pra usar o módulo.';
+    aviso.classList.remove("hidden");
+    return;
+  }
+
+  aviso.classList.add("hidden");
+  // Carimbo de tempo no recarregar: sem ele o navegador devolve a cópia em
+  // cache e um `npm run jarvis` novo não apareceria.
+  frame.src = forcar ? PRIMEIRO_URL + "?r=" + Date.now() : PRIMEIRO_URL;
+  primeiroCarregado = true;
+}
+
+document.getElementById("primeiroRecarregarBtn")?.addEventListener("click", () => abrirPrimeiro(true));
+document.getElementById("primeiroAbrirBtn")?.addEventListener("click", () => window.open(PRIMEIRO_URL, "_blank"));
 
 /* ══════════════════════════════════════════════════════════════
    SEGUNDO CÉREBRO — busca na memória persistente.
