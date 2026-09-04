@@ -1,7 +1,7 @@
-/* MÓDULO "primeiro" — a geladeira na ordem certa, dentro do Jarvis.
+/* MÓDULO "receita" — a geladeira na ordem certa, dentro do Jarvis.
  *
  * O código deste módulo NÃO mora aqui. Ele é construído no projeto Receita
- * (D:\8 - Claude - projeto\Receita) e exportado para `primeiro/` com
+ * (D:\8 - Claude - projeto\Receita) e exportado para `receita/` com
  * `npm run jarvis`. Este arquivo é só a ponte entre a antena e ele.
  *
  * O detalhe que faz isso valer a pena: o Worker construído para a Cloudflare
@@ -21,7 +21,7 @@ const fs = require("fs");
 const path = require("path");
 const { pathToFileURL } = require("url");
 
-const RAIZ = path.join(__dirname, "primeiro");
+const RAIZ = path.join(__dirname, "receita");
 const CLIENTE = path.join(RAIZ, "client");
 const WORKER = path.join(RAIZ, "worker.mjs");
 
@@ -44,7 +44,7 @@ const TIPOS = {
    além disso o painel roda dentro de um iframe do Jarvis, onde as regras de
    cookie de terceiros entram no caminho. E a máquina é de uma pessoa só.
    Então a ponte injeta uma identidade fixa e o worker segue igual. */
-const COOKIE_LOCAL = "primeiro_id=jarvislocal00000000000000000000";
+const COOKIE_LOCAL = "receita_id=jarvislocal00000000000000000000";
 
 let workerCarregado = null;
 let erroDoWorker = null;
@@ -99,11 +99,11 @@ function abrirDespensaLocal(arquivo) {
 /* --------------------------- estáticos do módulo --------------------------- */
 
 function servirEstatico(pedido, res, corsHeaders) {
-  // "/primeiro" e "/primeiro/" caem no index; qualquer outro caminho vira
+  // "/receita" e "/receita/" caem no index; qualquer outro caminho vira
   // arquivo. Rota desconhecida também devolve o index, porque a aplicação é
   // uma SPA — o mesmo que `not_found_handling: single-page-application` faz
   // na Cloudflare.
-  let relativo = pedido.replace(/^\/primeiro\/?/, "");
+  let relativo = pedido.replace(/^\/receita\/?/, "");
   if (!relativo || relativo.endsWith("/")) relativo = "index.html";
 
   // Trava de travessia: sem isto, "..%2F..%2Fserver.js" leria o que quisesse
@@ -162,8 +162,8 @@ async function servirApi(req, res, parsedReq, corsHeaders, opcoes) {
     req.on("error", () => resolve(Buffer.alloc(0)));
   });
 
-  // /api/primeiro/menu  ->  /api/menu
-  const caminho = parsedReq.pathname.replace(/^\/api\/primeiro/, "/api");
+  // /api/receita/menu  ->  /api/menu
+  const caminho = parsedReq.pathname.replace(/^\/api\/receita/, "/api");
   const url = "http://127.0.0.1" + caminho + parsedReq.search;
 
   const cabecalhos = new Headers();
@@ -186,7 +186,7 @@ async function servirApi(req, res, parsedReq, corsHeaders, opcoes) {
       DESPENSA: abrirDespensaLocal(opcoes.arquivoDespensa),
     });
   } catch (e) {
-    console.log("[primeiro] erro no worker:", e.message);
+    console.log("[receita] erro no worker:", e.message);
     res.writeHead(500, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ error: "Algo deu errado. Tente novamente." }));
     return;
@@ -209,7 +209,7 @@ async function servirApi(req, res, parsedReq, corsHeaders, opcoes) {
 function tratar(req, res, parsedReq, corsHeaders, opcoes) {
   const p = parsedReq.pathname;
 
-  if (p === "/primeiro" || p.startsWith("/primeiro/")) {
+  if (p === "/receita" || p.startsWith("/receita/")) {
     if (req.method !== "GET" && req.method !== "HEAD") {
       res.writeHead(405, corsHeaders());
       res.end();
@@ -219,9 +219,9 @@ function tratar(req, res, parsedReq, corsHeaders, opcoes) {
     return true;
   }
 
-  if (p === "/api/primeiro" || p.startsWith("/api/primeiro/")) {
+  if (p === "/api/receita" || p.startsWith("/api/receita/")) {
     servirApi(req, res, parsedReq, corsHeaders, opcoes).catch((e) => {
-      console.log("[primeiro] falha inesperada:", e.message);
+      console.log("[receita] falha inesperada:", e.message);
       try {
         res.writeHead(500, corsHeaders());
         res.end();

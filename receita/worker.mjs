@@ -349,7 +349,7 @@ function cardapioDemo(meals, maxTime) {
 }
 const LIMITE = 80;
 const PREFIXO = "despensa:";
-const COOKIE = "primeiro_id";
+const COOKIE = "receita_id";
 const UM_ANO = 60 * 60 * 24 * 365;
 class DepositoKV {
   constructor(kv) {

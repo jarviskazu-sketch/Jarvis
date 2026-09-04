@@ -12,7 +12,7 @@ const tls = require("tls");
 const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
-const moduloPrimeiro = require("./primeiro-modulo");
+const moduloReceita = require("./receita-modulo");
 
 const PORT = 4242;
 
@@ -939,11 +939,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Módulo "primeiro" (a geladeira na ordem certa). Vem cedo no roteador
-  // porque tem prefixo próprio — /primeiro e /api/primeiro — e devolve false
+  // Módulo "receita" (a geladeira na ordem certa). Vem cedo no roteador
+  // porque tem prefixo próprio — /receita e /api/receita — e devolve false
   // na hora se a rota não for dele, sem custo pro resto da antena.
-  if (moduloPrimeiro.tratar(req, res, parsedReq, corsHeaders, {
-    arquivoDespensa: path.join(AGENT_STATE_DIR, "primeiro-despensa.json"),
+  if (moduloReceita.tratar(req, res, parsedReq, corsHeaders, {
+    arquivoDespensa: path.join(AGENT_STATE_DIR, "receita-despensa.json"),
   })) {
     return;
   }
