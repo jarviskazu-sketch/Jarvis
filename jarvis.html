@@ -877,7 +877,7 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
     <button class="tabbtn" data-tab="cerebro">🧠 CÉREBRO</button>
     <button class="tabbtn" data-tab="estudio">✍ ESTÚDIO</button>
     <button class="tabbtn" data-tab="receita">🥬 RECEITA</button>
-    <button class="tabbtn" data-tab="form">🏋 FORM</button>
+    <button class="tabbtn" data-tab="personal">🏋 PERSONAL</button>
     <button class="tabbtn" data-tab="tokens" data-external="ai-token-control.html" title="Abre o painel AI Token Control em outra aba">🪙 TOKENS</button>
   </nav>
 
@@ -1096,27 +1096,27 @@ details.ruidoBox summary{ font-family: var(--font) !important; cursor: pointer; 
   ></iframe>
 </section>
 
-<!-- MÓDULO "form" — coach visual de execução de exercícios.
+<!-- MÓDULO "personal" — coach visual de execução de exercícios.
 
      Mesmo desenho do receita: iframe, e não painel nativo. Aqui o motivo é
      mais forte ainda — o módulo carrega o MediaPipe e lê vídeo quadro a
      quadro; embutir isso no documento do Jarvis misturaria o ciclo de vida
      de um detector de pose com o de todos os outros painéis. -->
-<section class="panelWrap hidden" id="panel-form">
+<section class="panelWrap hidden" id="panel-personal">
   <div class="panelHead">
     <div>
-      <h2>🏋 FORM</h2>
+      <h2>🏋 PERSONAL</h2>
       <span class="sub">envie um vídeo · veja cada repetição · monte a semana</span>
     </div>
     <div class="actions">
-      <button id="formRecarregarBtn" title="Recarregar o módulo">⟳</button>
-      <button id="formAbrirBtn" title="Abrir em uma aba separada">⧉</button>
+      <button id="personalRecarregarBtn" title="Recarregar o módulo">⟳</button>
+      <button id="personalAbrirBtn" title="Abrir em uma aba separada">⧉</button>
     </div>
   </div>
-  <div id="formAviso" class="offlineNote hidden"></div>
+  <div id="personalAviso" class="offlineNote hidden"></div>
   <iframe
-    id="formFrame"
-    title="form — workout form coach"
+    id="personalFrame"
+    title="personal — workout form coach"
     style="width:100%;height:min(1100px,calc(100vh - 210px));border:1px solid var(--border,#1c2740);border-radius:14px;background:#f4f6f1;display:block;"
     allow="camera"
     referrerpolicy="no-referrer"
@@ -2536,7 +2536,7 @@ function offlineNoteHTML(){
 /* ============ TABS ============ */
 function switchTab(tab){
   document.querySelectorAll(".tabbtn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["agenda","emails","news","digest","agents","cerebro","estudio","receita","form"].forEach(t => {
+  ["agenda","emails","news","digest","agents","cerebro","estudio","receita","personal"].forEach(t => {
     const p = document.getElementById("panel-"+t);
     if(p) p.classList.toggle("hidden", t !== tab);
   });
@@ -2547,7 +2547,7 @@ document.querySelectorAll(".tabbtn[data-tab]").forEach(btn => btn.addEventListen
   switchTab(btn.dataset.tab);
   if(btn.dataset.tab === "estudio") renderVozPerfil();
   if(btn.dataset.tab === "receita") abrirReceita();
-  if(btn.dataset.tab === "form") abrirForm();
+  if(btn.dataset.tab === "personal") abrirPersonal();
   if(btn.dataset.tab === "cerebro"){ cerebroEstado(); fetchCerebroGrafo(); }
   else{ stopCerebroLoop(); }
 }));
@@ -2591,20 +2591,20 @@ document.getElementById("receitaRecarregarBtn")?.addEventListener("click", () =>
 document.getElementById("receitaAbrirBtn")?.addEventListener("click", () => window.open(RECEITA_URL, "_blank"));
 
 /* ══════════════════════════════════════════════════════════════
-   MÓDULO "form" — coach visual de execução de exercícios.
+   MÓDULO "personal" — coach visual de execução de exercícios.
 
    A antena serve só arquivos: o módulo inteiro roda no navegador, incluindo
    a leitura de pose. Não existe rota de API para ele, e isso é a promessa
    de privacidade do produto, não um detalhe de implementação.
    ══════════════════════════════════════════════════════════════ */
-const FORM_URL = ANTENNA_BASE + "/form/";
-let formCarregado = false;
+const PERSONAL_URL = ANTENNA_BASE + "/personal/";
+let personalCarregado = false;
 
-async function abrirForm(forcar){
-  const frame = document.getElementById("formFrame");
-  const aviso = document.getElementById("formAviso");
+async function abrirPersonal(forcar){
+  const frame = document.getElementById("personalFrame");
+  const aviso = document.getElementById("personalAviso");
   if(!frame) return;
-  if(formCarregado && !forcar) return;
+  if(personalCarregado && !forcar) return;
 
   try{
     const r = await fetch(ANTENNA_BASE + "/ping", { cache: "no-store" });
@@ -2617,12 +2617,12 @@ async function abrirForm(forcar){
   }
 
   aviso.classList.add("hidden");
-  frame.src = forcar ? FORM_URL + "?r=" + Date.now() : FORM_URL;
-  formCarregado = true;
+  frame.src = forcar ? PERSONAL_URL + "?r=" + Date.now() : PERSONAL_URL;
+  personalCarregado = true;
 }
 
-document.getElementById("formRecarregarBtn")?.addEventListener("click", () => abrirForm(true));
-document.getElementById("formAbrirBtn")?.addEventListener("click", () => window.open(FORM_URL, "_blank"));
+document.getElementById("personalRecarregarBtn")?.addEventListener("click", () => abrirPersonal(true));
+document.getElementById("personalAbrirBtn")?.addEventListener("click", () => window.open(PERSONAL_URL, "_blank"));
 
 /* ══════════════════════════════════════════════════════════════
    SEGUNDO CÉREBRO — busca na memória persistente.

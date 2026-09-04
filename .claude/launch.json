@@ -30,11 +30,11 @@
       "port": 5173
     },
     {
-      "name": "form",
+      "name": "personal",
       "runtimeExecutable": "node",
       "runtimeArgs": [
-        "D:\\8 - Claude - projeto\\Form\\node_modules\\vite\\bin\\vite.js",
-        "D:\\8 - Claude - projeto\\Form",
+        "D:\\8 - Claude - projeto\\Personal\\node_modules\\vite\\bin\\vite.js",
+        "D:\\8 - Claude - projeto\\Personal",
         "--port",
         "5174",
         "--strictPort"

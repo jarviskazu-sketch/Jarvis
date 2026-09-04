@@ -88,7 +88,7 @@ function abrirDespensaLocal(arquivo) {
 
 function servirEstatico(pedido, res, corsHeaders) {
   // A leitura de arquivo e a trava contra travessia de caminho vivem em
-  // modulo-estatico.js, compartilhadas com o módulo form. Código de
+  // modulo-estatico.js, compartilhadas com o módulo personal. Código de
   // segurança em duas cópias é uma correção futura esquecida pela metade.
   servir({
     raiz: CLIENTE,

@@ -1,6 +1,6 @@
 {
-  "name": "form — workout form coach",
-  "short_name": "form",
+  "name": "personal — workout form coach",
+  "short_name": "personal",
   "description": "Análise visual de execução de exercícios, processada no próprio aparelho.",
   "start_url": "/",
   "scope": "/",

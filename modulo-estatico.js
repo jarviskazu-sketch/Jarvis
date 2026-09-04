@@ -1,4 +1,4 @@
-/* Servidor de arquivos para os módulos embutidos do Jarvis (receita, form).
+/* Servidor de arquivos para os módulos embutidos do Jarvis (receita, personal).
  *
  * Existe compartilhado por um motivo específico: a trava contra travessia de
  * caminho é código de segurança. Duplicada em cada módulo, uma correção
@@ -30,14 +30,14 @@ const TIPOS = {
  *
  * @param {object} opcoes
  * @param {string} opcoes.raiz      diretório do build (absoluto)
- * @param {string} opcoes.prefixo   ex: "/form"
+ * @param {string} opcoes.prefixo   ex: "/personal"
  * @param {string} opcoes.pedido    o pathname da requisição
  * @param {object} opcoes.res       resposta do Node
  * @param {Function} opcoes.corsHeaders
  * @param {string} opcoes.comoInstalar  comando a mostrar se o build faltar
  */
 function servir({ raiz, prefixo, pedido, res, corsHeaders, comoInstalar }) {
-  // "/form" e "/form/" caem no index; o resto vira caminho de arquivo.
+  // "/personal" e "/personal/" caem no index; o resto vira caminho de arquivo.
   const semPrefixo = pedido.slice(prefixo.length).replace(/^\//, "");
   const relativo = !semPrefixo || semPrefixo.endsWith("/") ? "index.html" : semPrefixo;
 

@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const moduloReceita = require("./receita-modulo");
-const moduloForm = require("./form-modulo");
+const moduloPersonal = require("./personal-modulo");
 
 const PORT = 4242;
 
@@ -949,9 +949,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Módulo "form" (coach de execução). Só arquivos: o produto inteiro roda
+  // Módulo "personal" (coach de execução). Só arquivos: o produto inteiro roda
   // no navegador, então a antena não tem rota de API nenhuma para ele.
-  if (moduloForm.tratar(req, res, parsedReq, corsHeaders)) {
+  if (moduloPersonal.tratar(req, res, parsedReq, corsHeaders)) {
     return;
   }
 

@@ -1,7 +1,7 @@
-/* MÓDULO "form" — coach visual de execução de exercícios, dentro do Jarvis.
+/* MÓDULO "personal" — coach visual de execução de exercícios, dentro do Jarvis.
  *
- * O código deste módulo NÃO mora aqui. É construído no projeto Form
- * (D:\8 - Claude - projeto\Form) e exportado para `form/` com
+ * O código deste módulo NÃO mora aqui. É construído no projeto Personal
+ * (D:\8 - Claude - projeto\Personal) e exportado para `personal/` com
  * `npm run jarvis`. Este arquivo é só a ponte com a antena.
  *
  * Ao contrário do receita, aqui NÃO existe parte de servidor: nem Worker,
@@ -11,15 +11,15 @@
  * guardado é o plano da semana, no localStorage do próprio aparelho.
  *
  * Ou seja: a antena serve arquivos e mais nada. Se um dia aparecer uma rota
- * /api/form aqui, é sinal de que alguém quebrou a promessa de privacidade.
+ * /api/personal aqui, é sinal de que alguém quebrou a promessa de privacidade.
  */
 
 const fs = require("fs");
 const path = require("path");
 const { servir } = require("./modulo-estatico");
 
-const RAIZ = path.join(__dirname, "form");
-const PREFIXO = "/form";
+const RAIZ = path.join(__dirname, "personal");
+const PREFIXO = "/personal";
 
 function tratar(req, res, parsedReq, corsHeaders) {
   const p = parsedReq.pathname;
