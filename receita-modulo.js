@@ -20,23 +20,11 @@
 const fs = require("fs");
 const path = require("path");
 const { pathToFileURL } = require("url");
+const { servir } = require("./modulo-estatico");
 
 const RAIZ = path.join(__dirname, "receita");
 const CLIENTE = path.join(RAIZ, "client");
 const WORKER = path.join(RAIZ, "worker.mjs");
-
-const TIPOS = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".webmanifest": "application/manifest+json; charset=utf-8",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".map": "application/json; charset=utf-8",
-};
 
 /* Na nuvem a identidade do visitante vem de um cookie, para cada navegador
    ter a sua despensa. Aqui isso não funcionaria e não faria sentido:
@@ -99,48 +87,17 @@ function abrirDespensaLocal(arquivo) {
 /* --------------------------- estáticos do módulo --------------------------- */
 
 function servirEstatico(pedido, res, corsHeaders) {
-  // "/receita" e "/receita/" caem no index; qualquer outro caminho vira
-  // arquivo. Rota desconhecida também devolve o index, porque a aplicação é
-  // uma SPA — o mesmo que `not_found_handling: single-page-application` faz
-  // na Cloudflare.
-  let relativo = pedido.replace(/^\/receita\/?/, "");
-  if (!relativo || relativo.endsWith("/")) relativo = "index.html";
-
-  // Trava de travessia: sem isto, "..%2F..%2Fserver.js" leria o que quisesse
-  // da máquina. `resolve` normaliza o ".." ANTES da checagem.
-  const alvo = path.resolve(CLIENTE, relativo);
-  if (!alvo.startsWith(CLIENTE + path.sep) && alvo !== CLIENTE) {
-    res.writeHead(403, corsHeaders());
-    res.end("caminho fora do modulo");
-    return;
-  }
-
-  let arquivo = alvo;
-  if (!fs.existsSync(arquivo) || fs.statSync(arquivo).isDirectory()) {
-    arquivo = path.join(CLIENTE, "index.html");
-  }
-  if (!fs.existsSync(arquivo)) {
-    res.writeHead(503, { ...corsHeaders(), "content-type": "text/html; charset=utf-8" });
-    res.end(
-      '<!doctype html><meta charset="utf-8">' +
-        '<body style="font:15px system-ui;background:#f3f0e7;color:#1d211b;padding:40px;max-width:520px;margin:auto">' +
-        "<h2>Módulo não instalado</h2>" +
-        "<p>Abra o projeto <code>Receita</code> e rode:</p>" +
-        '<pre style="background:#e9e4d7;padding:12px;border-radius:8px">npm run jarvis</pre>' +
-        "<p>Isso constrói o módulo e o instala aqui dentro.</p></body>"
-    );
-    return;
-  }
-
-  const tipo = TIPOS[path.extname(arquivo).toLowerCase()] || "application/octet-stream";
-  // Os arquivos com hash no nome podem ser cacheados para sempre; o index não,
-  // senão um `npm run jarvis` novo não apareceria sem limpar o navegador.
-  const cache = /\/assets\/.*-[A-Za-z0-9_]{8,}\./.test(arquivo.replace(/\\/g, "/"))
-    ? "public, max-age=31536000, immutable"
-    : "no-cache";
-
-  res.writeHead(200, { ...corsHeaders(), "content-type": tipo, "cache-control": cache });
-  fs.createReadStream(arquivo).pipe(res);
+  // A leitura de arquivo e a trava contra travessia de caminho vivem em
+  // modulo-estatico.js, compartilhadas com o módulo form. Código de
+  // segurança em duas cópias é uma correção futura esquecida pela metade.
+  servir({
+    raiz: CLIENTE,
+    prefixo: "/receita",
+    pedido,
+    res,
+    corsHeaders,
+    comoInstalar: "npm run jarvis",
+  });
 }
 
 /* ------------------------------- ponte da API ------------------------------- */

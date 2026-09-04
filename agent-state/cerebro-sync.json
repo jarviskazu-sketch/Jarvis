@@ -1,8 +1,8 @@
 {
-  "last_run": "2026-09-04T18:40:59.522Z",
+  "last_run": "2026-09-04T21:31:05.092Z",
   "ok": true,
-  "detail": "138 notas · 15 áreas · 917 arquivos catalogados",
-  "count": 138,
+  "detail": "143 notas · 15 áreas · 917 arquivos catalogados",
+  "count": 143,
   "fila": [],
   "auth": {
     "valida": true,
@@ -13,9 +13,9 @@
   "porArea": {
     "NUCLEO": 3,
     "ACERVO": 8,
-    "PROJETO": 11,
+    "PROJETO": 12,
     "CLIENTE": 3,
-    "DEV": 49,
+    "DEV": 53,
     "PROCESSO": 1,
     "DECISAO": 16,
     "OFERTA": 1,

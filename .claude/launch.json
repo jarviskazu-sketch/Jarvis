@@ -28,6 +28,18 @@
         "--strictPort"
       ],
       "port": 5173
+    },
+    {
+      "name": "form",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "D:\\8 - Claude - projeto\\Form\\node_modules\\vite\\bin\\vite.js",
+        "D:\\8 - Claude - projeto\\Form",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
     }
   ]
 }
